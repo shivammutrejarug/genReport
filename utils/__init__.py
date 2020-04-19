@@ -1,6 +1,8 @@
 import json
 import re
 
+from typing import List
+
 URL_REGEX = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
 url_pattern = re.compile(URL_REGEX)
 
@@ -10,5 +12,5 @@ def save_as_json(obj: object, path: str):
         json.dump(obj, file, indent=2)
 
 
-def extract_urls_from_string(string: str):
+def extract_urls_from_string(string: str) -> List[str]:
     return url_pattern.findall(string)
