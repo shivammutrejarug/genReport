@@ -1,5 +1,5 @@
 import os
-import errno, json
+import errno
 
 from jira.client import JIRA
 from jira.resources import Issue
@@ -34,8 +34,9 @@ class JiraParser:
             issues.extend(fetched_issues)
             print("Fetched {} issues".format(len(issues)))
         self.__issues = issues
+        print("Finished fetching issues! Totally fetched: {}".format(len(issues)))
 
-    def fetch_and_store_comments(self):
+    def fetch_and_save_comments(self):
         """
         For each issue stored in the JiraParser object,
         fetch all comments and create a JSON file containing necessary information:
@@ -49,7 +50,8 @@ class JiraParser:
             4.4. Body of the comment
         All the data is stored in a file "Projects/<project_name>/Issues/<issue_key>.json"
         """
-        for issue in self.__issues:
+        count = 0
+        for count, issue in enumerate(self.__issues, start=1):
             filename = issue.raw["key"] + ".json"
             path = os.path.join("Projects", self.project, "Issues", filename)
 
@@ -60,10 +62,13 @@ class JiraParser:
                     if e.errno != errno.EEXIST:
                         raise
             json_object = self.__prepare_json_object(issue)
-
             utils.save_as_json(json_object, path)
 
-    def __prepare_json_object(self, issue: Issue):
+            if count % 100 == 0:
+                print("Saved {} issues and their comments".format(count))
+        print("Finished saving issues! Totally saved: {}".format(count))
+
+    def __prepare_json_object(self, issue: Issue) -> dict:
         """
         Prepare a dictionary containing the following data:
         {
@@ -103,4 +108,4 @@ class JiraParser:
 
 if __name__ == "__main__":
     parser = JiraParser(PROJECTS[0])
-    parser.fetch_and_store_comments()
+    parser.fetch_and_save_comments()
