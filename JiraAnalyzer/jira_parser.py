@@ -1,5 +1,5 @@
 import os
-import errno
+import errno, json
 
 from jira.client import JIRA
 from jira.resources import Issue
@@ -83,6 +83,7 @@ class JiraParser:
         """
         json_object = dict()
         json_object["issue_key"] = issue.raw["key"]
+        json_object["status"] = issue.raw["fields"]["status"]["name"]
         json_object["created"] = issue.raw["fields"]["created"]
         json_object["updated"] = issue.raw["fields"]["updated"]
         json_object["comments"] = []
