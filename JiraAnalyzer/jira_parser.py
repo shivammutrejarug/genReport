@@ -32,6 +32,7 @@ class JiraParser:
                 break
             block_index += 1
             issues.extend(fetched_issues)
+            print("Fetched {} issues".format(len(issues)))
         self.__issues = issues
 
     def fetch_and_store_comments(self):
