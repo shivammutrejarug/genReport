@@ -146,5 +146,5 @@ cython_debug/
 .idea/inspectionProfiles/
 .idea/misc.xml
 .idea/modules.xml
-JiraAnalyzer/__pycache__/
+jira_analyzer/__pycache__/
 utils/__pycache__/

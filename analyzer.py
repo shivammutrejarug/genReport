@@ -1,4 +1,4 @@
-from JiraAnalyzer.jira_parser import JiraParser
+from jira_analyzer.jira_parser import JiraParser
 import utils
 
 PROJECTS = ["PDFBOX"]
