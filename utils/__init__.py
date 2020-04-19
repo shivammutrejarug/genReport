@@ -1,3 +1,4 @@
+import argparse
 import json
 import re
 
@@ -14,3 +15,9 @@ def save_as_json(obj: object, path: str):
 
 def extract_urls_from_string(string: str) -> List[str]:
     return url_pattern.findall(string)
+
+
+def parse_arguments():
+    arg_parser = argparse.ArgumentParser()
+    arg_parser.add_argument("-j", "--jira-project", help="Target Jira project")
+    return arg_parser.parse_args()
