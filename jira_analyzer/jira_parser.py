@@ -32,9 +32,9 @@ class JiraParser:
                 break
             block_index += 1
             issues.extend(fetched_issues)
-            print("Fetched {} issues".format(len(issues)))
+            print("{}: Fetched {} issues".format(self.project, len(issues)))
         self.__issues = issues
-        print("Finished fetching issues! Totally fetched: {}".format(len(issues)))
+        print("{}: Finished fetching issues! Totally fetched: {}".format(self.project, len(issues)))
 
     def fetch_and_save_comments(self):
         """
@@ -65,8 +65,8 @@ class JiraParser:
             utils.save_as_json(json_object, path)
 
             if count % 100 == 0:
-                print("Saved {} issues and their comments".format(count))
-        print("Finished saving issues! Totally saved: {}".format(count))
+                print("{}: Saved {} issues and their comments".format(self.project, count))
+        print("{}: Finished saving issues! Totally saved: {}".format(self.project, count))
 
     def __prepare_json_object(self, issue: Issue) -> dict:
         """
