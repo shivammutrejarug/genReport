@@ -16,7 +16,7 @@ class JiraParser:
         self.project = jira_project
         self.__issues = []
 
-    def fetch_issues(self, block_index=0):
+    def fetch_issues(self, block_index: int = 0):
         """
         Fetch all issues from the project and store them in the self.issues list
         """
