@@ -7,8 +7,10 @@ from typing import List
 
 # Taken from http://www.noah.org/wiki/RegEx_Python#URL_regex_pattern
 URL_REGEX = r'http[s]?://(?:[\~\#a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[\~\#0-9a-fA-F][\~\#0-9a-fA-F]))+'
-# URL_REGEX = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
-url_pattern = re.compile(URL_REGEX)
+REVISION_REGEX = r'(?:r|[Rr]ev. |[Rr]evision |[Cc]ommit )[0-9]+'
+
+url_matcher = re.compile(URL_REGEX)
+revision_matcher = re.compile(REVISION_REGEX)
 
 
 def save_as_json(obj: object, path: str):
@@ -40,7 +42,7 @@ def extract_urls(input_directory: str, output_directory: str) -> None:
     for input_file in input_files:
         input_path = os.path.join(input_directory, input_file)
         with open(input_path, "r") as file:
-            urls = url_pattern.findall(clean_text(file.read()))
+            urls = url_matcher.findall(clean_text(file.read()))
 
             urls = list(
                 map(
@@ -56,6 +58,15 @@ def extract_urls(input_directory: str, output_directory: str) -> None:
         with open(output_path, 'w') as file:
             file.write('\n'.join(urls))
         file.close()
+
+
+def extract_issues(text: str, project_name: str) -> List[str]:
+    issue_matcher = re.compile("{}-{}".format(project_name, r'\d+'))
+    return list(issue_matcher.findall(text))
+
+
+def extract_revisions(text: str) -> List[str]:
+    return list(revision_matcher.findall(text))
 
 
 def clean_text(text: str) -> str:
@@ -80,7 +91,13 @@ def clean_text(text: str) -> str:
     return text
 
 
+def test():
+    print(extract_issues("PDFBOX-13 aPDFBOX-152b qweqweqweqweqwePDFBOX-173435345sdfa4", "PDFBOX"))
+    print(extract_revisions("Revision 123commit 5rhdrghfCommit 72 rev. 12312Rev.36Rev. 123r6453241"))
+
+
 if __name__ == "__main__":
-    project = "PDFBOX"
-    extract_urls(input_directory=os.path.join("..", "Projects", project, "Issues"),
-                 output_directory=os.path.join("..", "Projects", project, "URLs"))
+    # project = "PDFBOX"
+    # extract_urls(input_directory=os.path.join("..", "Projects", project, "Issues"),
+    #              output_directory=os.path.join("..", "Projects", project, "URLs"))
+    test()
