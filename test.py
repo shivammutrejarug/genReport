@@ -6,10 +6,11 @@ def test_regex():
     print(utils.extract_revisions("Revision 123commit 5rhdrghfCommit 72 rev. 12312Rev.36Rev. 123r6453241"))
 
 
-def test_first_number_extraction():
-    string = "jnfgjkn   7 12355123nvj6453kjdgf99"
-    print(utils.extract_numbers(string))
+def test_svn_url_construction():
+    revisions = utils.extract_revisions("revision 1835045rev. 1835515   r1835516")
+    for revision in revisions:
+        print(utils.construct_svn_revision_url(revision))
 
 
 test_regex()
-test_first_number_extraction()
+test_svn_url_construction()

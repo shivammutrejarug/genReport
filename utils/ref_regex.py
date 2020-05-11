@@ -61,7 +61,7 @@ def extract_revisions(text: str) -> List[str]:
     return list(revision_matcher.findall(text))
 
 
-def extract_numbers(text: str) -> List[int]:
+def extract_numbers(text: str) -> List[str]:
     return list(re.findall(r'\d+', text))
 
 
