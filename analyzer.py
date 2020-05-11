@@ -2,6 +2,8 @@ from jiraanalyzer import JiraParser
 import os
 import utils
 
+from typing import List
+
 PROJECTS = [
     "PDFBOX",
     "DERBY",
@@ -30,13 +32,21 @@ PROJECTS_WITH_PULL_REQUESTS = [
     "NUTCH"  # Nutch https://issues.apache.org/jira/projects/NUTCH/summary
 ]
 
+
+def retrieve_and_save_issues(projects: List[str]) -> None:
+    for project in projects:
+        print("Fetching project {}".format(project))
+        parser = JiraParser(project)
+        parser.fetch_issues()
+
+        parser.fetch_and_save_comments()
+        utils.extract_urls(input_directory=os.path.join("Projects", project, "Issues"),
+                           output_directory=os.path.join("Projects", project, "URLs"))
+
+
+
+
 args = utils.parse_arguments()
 projects = [args.jira_project] if args.jira_project else PROJECTS
-for project in projects:
-    print("Fetching project {}".format(project))
-    parser = JiraParser(project)
-    issues = parser.fetch_issues()
-
-    parser.fetch_and_save_comments()
-    utils.extract_urls(input_directory=os.path.join("Projects", project, "Issues"),
-                       output_directory=os.path.join("Projects", project, "URLs"))
+# ALREADY DONE
+# retrieve_and_save_issues(projects)

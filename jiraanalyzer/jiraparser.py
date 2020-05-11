@@ -4,6 +4,8 @@ import errno
 from jira.client import JIRA
 from jira.resources import Issue
 
+from typing import List
+
 import utils
 
 PROJECTS = ["PDFBOX"]
@@ -16,7 +18,7 @@ class JiraParser:
         self.project = jira_project
         self.__issues = []
 
-    def fetch_issues(self, block_index: int = 0):
+    def fetch_issues(self, block_index: int = 0) -> None:
         """
         Fetch all issues from the project and store them in the self.issues list
         """
@@ -33,7 +35,6 @@ class JiraParser:
             print("{}: Fetched {} issues".format(self.project, len(issues)))
         self.__issues = issues
         print("{}: Finished fetching issues! Totally fetched: {}".format(self.project, len(issues)))
-        return issues
 
     def fetch_and_save_comments(self):
         """
