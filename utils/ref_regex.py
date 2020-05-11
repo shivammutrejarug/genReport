@@ -25,6 +25,7 @@ def extract_urls(input_directory: str, output_directory: str) -> None:
     :return: None
     """
     if not os.path.exists(input_directory):
+        print("Input directory does not exist!")
         return
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
