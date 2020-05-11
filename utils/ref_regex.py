@@ -6,9 +6,11 @@ from typing import List
 # Taken from http://www.noah.org/wiki/RegEx_Python#URL_regex_pattern
 URL_REGEX = r'http[s]?://(?:[\~\#a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[\~\#0-9a-fA-F][\~\#0-9a-fA-F]))+'
 REVISION_REGEX = r'(?:r|[Rr]ev. |[Rr]evision |[Cc]ommit )[0-9]+'
+NUMBER_REGEX = r'\d+'
 
 url_matcher = re.compile(URL_REGEX)
 revision_matcher = re.compile(REVISION_REGEX)
+number_matcher = re.compile(NUMBER_REGEX)
 
 
 # EXAMPLE
@@ -57,6 +59,10 @@ def extract_issues(text: str, project_name: str) -> List[str]:
 
 def extract_revisions(text: str) -> List[str]:
     return list(revision_matcher.findall(text))
+
+
+def extract_numbers(text: str) -> List[int]:
+    return list(re.findall(r'\d+', text))
 
 
 def clean_text(text: str) -> str:
