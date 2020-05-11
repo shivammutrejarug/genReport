@@ -1,4 +1,4 @@
-from jira_analyzer.jira_parser import JiraParser
+from jiraanalyzer.jiraparser import JiraParser
 import os
 import utils
 
