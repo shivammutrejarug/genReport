@@ -54,15 +54,41 @@ def extract_urls(input_directory: str, output_directory: str) -> None:
 
 
 def extract_issues(text: str, project_name: str) -> List[str]:
+    """
+    Extract all issue IDs from the text. Each issue ID has the form <project_name>-{int_id}.
+    :param text: Text to extract issue IDs from
+    :param project_name: Name of the project to match issue IDs
+    :return: List of issue IDs
+    """
     issue_matcher = re.compile("{}-{}".format(project_name, r'\d+'))
     return list(issue_matcher.findall(text))
 
 
-def extract_revisions(text: str) -> List[str]:
-    return list(revision_matcher.findall(text))
+def extract_revisions(text: str, uniform: bool = False) -> List[str]:
+    """
+    Extract all revisions mentioned in the text.
+    If "uniform" is set to True, then all revisions are converted to the form "rXXXXX".
+    :param text: Text to extract revisions from
+    :param uniform: Whether to convert revisions to the form "rXXXXX"
+    :return: Extracted revisions
+    """
+    revisions = list(revision_matcher.findall(text))
+    if uniform:
+        revisions = list(
+            map(
+                lambda revision: "r{}".format(extract_numbers(revision)[0]),
+                revisions
+            )
+        )
+    return revisions
 
 
 def extract_numbers(text: str) -> List[str]:
+    """
+    Extract numbers from the text.
+    :param text: Text to extract numbers from
+    :return: List of strings containing a single number each
+    """
     return list(re.findall(r'\d+', text))
 
 
