@@ -35,6 +35,7 @@ projects = [args.jira_project] if args.jira_project else PROJECTS
 for project in projects:
     print("Fetching project {}".format(project))
     parser = JiraParser(project)
+    issues = parser.fetch_issues()
 
     parser.fetch_and_save_comments()
     utils.extract_urls(input_directory=os.path.join("Projects", project, "Issues"),

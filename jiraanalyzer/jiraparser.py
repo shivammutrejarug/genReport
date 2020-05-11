@@ -15,15 +15,13 @@ class JiraParser:
         self.jira = JIRA(server=APACHE_JIRA_SERVER)
         self.project = jira_project
         self.__issues = []
-        self.__fetch_issues()
 
-    def __fetch_issues(self):
+    def fetch_issues(self, block_index=0):
         """
         Fetch all issues from the project and store them in the self.issues list
         """
         issues = []
         block_size = 100
-        block_index = 0
         while True:
             start_index = block_index * block_size
             fetched_issues = self.jira.search_issues("project={}".format(self.project), startAt=start_index,
@@ -35,6 +33,7 @@ class JiraParser:
             print("{}: Fetched {} issues".format(self.project, len(issues)))
         self.__issues = issues
         print("{}: Finished fetching issues! Totally fetched: {}".format(self.project, len(issues)))
+        return issues
 
     def fetch_and_save_comments(self):
         """
