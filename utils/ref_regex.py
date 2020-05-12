@@ -1,7 +1,7 @@
 import os
 import re
 
-from typing import List
+from typing import List, Set
 
 # Taken from http://www.noah.org/wiki/RegEx_Python#URL_regex_pattern
 URL_REGEX = r'http[s]?://(?:[\~\#a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[\~\#0-9a-fA-F][\~\#0-9a-fA-F]))+'
@@ -13,44 +13,23 @@ revision_matcher = re.compile(REVISION_REGEX)
 number_matcher = re.compile(NUMBER_REGEX)
 
 
-# EXAMPLE
-# extract_urls(input_directory=os.path.join("..", "Projects", project, "Issues"),
-#              output_directory=os.path.join("..", "Projects", project, "URLs"))
-def extract_urls(input_directory: str, output_directory: str) -> None:
-    """
-    Extract URLs from each file in input_directory and
-    save them in appropriate files in .txt format in output_directory.
-    :param input_directory: Directory to read files from
-    :param output_directory: Directory to write files to
-    :return: None
-    """
-    if not os.path.exists(input_directory):
-        print("Input directory does not exist!")
-        return
-    if not os.path.exists(output_directory):
-        os.makedirs(output_directory)
-
-    input_files = os.listdir(input_directory)
-
-    for input_file in input_files:
-        input_path = os.path.join(input_directory, input_file)
-        with open(input_path, "r") as file:
-            urls = url_matcher.findall(clean_text(file.read()))
-
-            urls = list(
-                map(
-                    # if a URL ends with '.', '\' or '?', then we should remove that character
-                    lambda url: url[:-1] if url[-1] in ['.', '\\', '?'] else url,
-                    urls
-                )
+def extract_urls(text: str, filter_revisions=False) -> List[str]:
+    urls = url_matcher.findall(clean_text(text))
+    urls = list(
+        map(
+            # if a URL ends with '.', '\' or '?', then we should remove that character
+            lambda url: url[:-1] if url[-1] in ['.', '\\', '?'] else url,
+            urls
+        )
+    )
+    if filter_revisions:
+        urls = list(
+            filter(
+                lambda url: not url.startswith("https://svn.apache.org"),
+                urls
             )
-        file.close()
-
-        output_file = os.path.splitext(input_file)[0] + ".txt"
-        output_path = os.path.join(output_directory, output_file)
-        with open(output_path, 'w') as file:
-            file.write('\n'.join(urls))
-        file.close()
+        )
+    return urls
 
 
 def extract_issues(text: str, project_name: str) -> List[str]:

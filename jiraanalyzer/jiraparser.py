@@ -104,11 +104,3 @@ class JiraParser:
             comments.append(comment_dict)
 
         return json_object
-
-
-if __name__ == "__main__":
-    project = PROJECTS[0]
-    parser = JiraParser(project)
-    parser.fetch_and_save_comments()
-    utils.extract_urls(input_directory=os.path.join("..", "Projects", project, "Issues"),
-                       output_directory=os.path.join("..", "Projects", project, "URLs"))
