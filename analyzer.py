@@ -1,5 +1,6 @@
 import json
 from jiraanalyzer import JiraParser
+import matplotlib.pyplot as plt
 import os
 import pickle
 from typing import List, Tuple, Set
@@ -94,10 +95,10 @@ def collect_issues_summary(project: str) -> List[Tuple[str, int, Set[str], Set[s
 
 
 def save_references(project: str, issues: List[Tuple[str, int, Set[str], Set[str], Set[str], Set[str]]]) -> None:
-    reference_directory = os.path.join("Projects", project, "References")
+    reference_dir = os.path.join("Projects", project, "References")
 
-    shutil.rmtree(reference_directory, ignore_errors=True)
-    os.mkdir(reference_directory)
+    shutil.rmtree(reference_dir, ignore_errors=True)
+    os.mkdir(reference_dir)
 
     for issue in issues:
         issue_dict = dict()
@@ -107,14 +108,88 @@ def save_references(project: str, issues: List[Tuple[str, int, Set[str], Set[str
         issue_dict["revisions"] = list(issue[3])
         issue_dict["mailing_lists"] = list(issue[4])
         issue_dict["pdf_documents"] = list(issue[5])
-        path = os.path.join(reference_directory, issue[0] + ".json")
+        path = os.path.join(reference_dir, issue[0] + ".json")
         utils.save_as_json(issue_dict, path)
 
 
-issues = collect_issues_summary("PDFBOX")
-# with open("issues_summary_backup.P", 'w') as backup_file:
-#     pickle.dump(issues, backup_file)
-# with open("issues_summary_backup.P", 'r') as backup_file:
-#     issues = pickle.load(backup_file)
+def generate_statistics(project: str):
+    issues = []
+    reference_directory = os.path.join("Projects", project, "References")
 
-save_references("PDFBOX", issues)
+    for filename in os.listdir(reference_directory):
+        path = os.path.join(reference_directory, filename)
+        with open(path, 'r') as file:
+            data = json.load(file)
+            issues.append(
+                (str(data["issue_key"]),
+                 int(data["issue_id"]),
+                 list(data["urls"]),
+                 list(data["revisions"]),
+                 list(data["mailing_lists"]),
+                 list(data["pdf_documents"]))
+            )
+    issues = sorted(issues, key=lambda x: x[1])
+
+    blocks = []
+    block_size = 100
+    block_idx = 0
+    while True:
+        start_idx = block_idx * block_size
+        block = issues[start_idx:start_idx + block_size]
+        if len(block) == 0:
+            break
+        blocks.append(block)
+        block_idx += 1
+
+    block_idx = 1
+    statistics = []
+    for block in blocks:
+        total = 0
+        revisions = 0
+        mailing_lists = 0
+        pdf_documents = 0
+        other_urls = 0
+        for issue in block:
+            revisions += len(issue[3])
+            mailing_lists += len(issue[4])
+            pdf_documents += len(issue[5])
+            other_urls += len(issue[2])
+            for i in range(2, 6):
+                total += len(issue[i])
+        statistics.append((block_idx * 100, total, revisions, mailing_lists, pdf_documents, other_urls))
+        block_idx += 1
+    return statistics
+
+
+def make_plot(project: str, statistics, blocks: List[int], param_idx: int, param_title: str):
+    x = blocks
+    y = [param[param_idx] for param in statistics]
+    plt.plot(x, y)
+    plt.xlabel("Issue IDs")
+    plt.ylabel("Frequency of {}".format(param_title))
+    plt.title("Changes in frequency of {} through the evolution of the project {}".format(param_title, project))
+    plt.savefig(os.path.join("Plots", param_title + ".png"), bbox_inches='tight')
+    plt.close()
+
+
+def make_plots(project: str, statistics):
+    blocks = [param[0] for param in statistics]
+    types = [
+        (1, "Total"),
+        (2, "Revisions"),
+        (3, "Mailing Lists"),
+        (4, "PDF documents"),
+        (5, "Other URLs")
+    ]
+
+    plots_dir = "Plots"
+    shutil.rmtree(plots_dir, ignore_errors=True)
+    os.mkdir(plots_dir)
+
+    for t in types:
+        make_plot(project, statistics, blocks, t[0], t[1])
+
+
+statistics = generate_statistics("PDFBOX")
+
+make_plots("PDFBOX", statistics)
