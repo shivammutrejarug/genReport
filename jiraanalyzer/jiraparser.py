@@ -4,8 +4,6 @@ import errno
 from jira.client import JIRA
 from jira.resources import Issue
 
-from typing import List
-
 import utils
 
 PROJECTS = ["PDFBOX"]

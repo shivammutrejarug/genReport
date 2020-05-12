@@ -14,6 +14,12 @@ number_matcher = re.compile(NUMBER_REGEX)
 
 
 def extract_urls(text: str, filter_revisions=False) -> List[str]:
+    """
+    Extract URLs from the text. If filter_revisions set to True, all URLs belonging to SVN revisions are ignored.
+    :param text: Text to extract URLs from
+    :param filter_revisions: Whether to ignore revision URLs
+    :return: List of extracted URLs
+    """
     urls = url_matcher.findall(clean_text(text))
     urls = list(
         map(

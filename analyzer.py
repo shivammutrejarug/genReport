@@ -57,6 +57,13 @@ projects = [args.jira_project] if args.jira_project else PROJECTS
 
 
 def collect_issues_summary(project: str) -> List[Tuple[str, int, Set[str], Set[str], Set[str], Set[str]]]:
+    """
+    For each Issue inside Projects/<project>/Issues, extract all types of references and return a data type containing
+    all the necessary data
+    :param project: Project to extract references from
+    :return: List of tuples containing data
+    #TODO explain better what exactly is returned
+    """
     directory = os.path.join("Projects", project, "Issues")
     issues_dir = os.listdir(directory)
     issues = []
@@ -95,6 +102,12 @@ def collect_issues_summary(project: str) -> List[Tuple[str, int, Set[str], Set[s
 
 
 def save_references(project: str, issues: List[Tuple[str, int, Set[str], Set[str], Set[str], Set[str]]]) -> None:
+    """
+    Save references for each issue in JSON format
+    :param project: Project to write references for
+    :param issues: Data type describing necessary data
+    :return: None
+    """
     reference_dir = os.path.join("Projects", project, "References")
 
     shutil.rmtree(reference_dir, ignore_errors=True)
@@ -113,6 +126,13 @@ def save_references(project: str, issues: List[Tuple[str, int, Set[str], Set[str
 
 
 def generate_statistics(project: str):
+    """
+    Based on the references for each issue, generate the frequency of each type of references and split the data
+    into blocks of 100 issues for a broader analysis of the data.
+    :param project: Project to parse references from
+    :return: Generated statistics
+    #TODO type annotations and better documentation
+    """
     issues = []
     reference_directory = os.path.join("Projects", project, "References")
 
@@ -161,7 +181,7 @@ def generate_statistics(project: str):
     return statistics
 
 
-def make_plot(project: str, statistics, blocks: List[int], param_idx: int, param_title: str):
+def make_plot(project: str, statistics: List[Tuple[int, int, int, int, int, int]], blocks: List[int], param_idx: int, param_title: str):
     x = blocks
     y = [param[param_idx] for param in statistics]
     plt.plot(x, y)
@@ -172,10 +192,10 @@ def make_plot(project: str, statistics, blocks: List[int], param_idx: int, param
     plt.close()
 
 
-def make_plots(project: str, statistics):
+def make_plots(project: str, statistics: List[Tuple[int, int, int, int, int, int]]):
     blocks = [param[0] for param in statistics]
     types = [
-        (1, "Total"),
+        (1, "Total references"),
         (2, "Revisions"),
         (3, "Mailing Lists"),
         (4, "PDF documents"),

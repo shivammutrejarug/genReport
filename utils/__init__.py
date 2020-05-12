@@ -15,6 +15,11 @@ def parse_arguments():
 
 
 def construct_svn_revision_url(revision: str) -> str:
+    """
+    Extracts a revision ID and constructs a URL to SVN Apache.
+    :param revision: Revision to build the URL to
+    :return: URL
+    """
     revision_id = int(extract_numbers(revision)[0])
     return "https://svn.apache.org/r{}".format(revision_id)
 
