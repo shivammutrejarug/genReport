@@ -188,7 +188,7 @@ def make_plot(project: str, statistics: List[Tuple[int, int, int, int, int, int]
     plt.xlabel("Issue IDs")
     plt.ylabel("Frequency of {}".format(param_title))
     plt.title("Changes in frequency of {} through the evolution of the project {}".format(param_title, project))
-    plt.savefig(os.path.join("Plots", param_title + ".png"), bbox_inches='tight')
+    plt.savefig(os.path.join("Plots", project, param_title + ".png"), bbox_inches='tight')
     plt.close()
 
 
@@ -204,8 +204,7 @@ def make_plots(project: str, statistics: List[Tuple[int, int, int, int, int, int
 
     plots_dir = "Plots"
     shutil.rmtree(plots_dir, ignore_errors=True)
-    os.mkdir(plots_dir)
-
+    os.makedirs(os.path.join(plots_dir, project))
     for t in types:
         make_plot(project, statistics, blocks, t[0], t[1])
 
