@@ -41,7 +41,6 @@ class JiraParser:
         return issues
 
     def __save_issues(self, issues: List[Issue], first_issue: int, last_issue: int) -> None:
-        print("\t{}: Saving issues from {} to {}".format(self.project, first_issue, last_issue))
         directory = os.path.join("Projects", self.project, "Issues_raw")
         utils.create_dir_if_necessary(directory)
         for issue in issues:
