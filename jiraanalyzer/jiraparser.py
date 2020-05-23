@@ -15,9 +15,8 @@ class JiraParser:
     def __init__(self, jira_project: str):
         self.jira = JIRA(server=APACHE_JIRA_SERVER)
         self.project = jira_project
-        self.__issues = []
 
-    def fetch_issues(self, block_index: int = 0, save: bool = True) -> None:
+    def fetch_issues(self, block_index: int = 0, save: bool = True) -> List[Issue]:
         """
         Fetch all issues from the project and store them in the self.issues list
         """
@@ -36,12 +35,12 @@ class JiraParser:
                 first_issue = len(issues) - len(fetched_issues) + 1
                 last_issue = len(issues)
                 self.__save_issues(fetched_issues, first_issue, last_issue)
-        self.__issues = issues
         print("{}: Finished fetching {} issues! Totally fetched: {}".format(self.project,
                                                                             "and saving" if save else "",
                                                                             len(issues)))
+        return issues
 
-    def __save_issues(self, issues: List[Issue], first_issue: int, last_issue: int):
+    def __save_issues(self, issues: List[Issue], first_issue: int, last_issue: int) -> None:
         print("\t{}: Saving issues from {} to {}".format(self.project, first_issue, last_issue))
         directory = os.path.join("Projects", self.project, "Issues_raw")
         utils.create_dir_if_necessary(directory)
@@ -53,7 +52,7 @@ class JiraParser:
             print("\t\t{}: Saved issue {}".format(self.project, key))
         print("\t{}: Successfully saved issues from {} to {}".format(self.project, first_issue, last_issue))
 
-    def fetch_and_save_comments(self):
+    def fetch_and_save_comments(self, issues: List[Issue]):
         """
         For each issue stored in the JiraParser object,
         fetch all comments and create a JSON file containing necessary information:
@@ -68,16 +67,11 @@ class JiraParser:
         All the data is stored in a file "Projects/<project_name>/Issues/<issue_key>.json"
         """
         count = 0
-        for count, issue in enumerate(self.__issues, start=1):
+        directory = os.path.join("Projects", self.project, "Issues")
+        utils.create_dir_if_necessary(directory)
+        for count, issue in enumerate(issues, start=1):
             filename = issue.raw["key"] + ".json"
-            path = os.path.join("Projects", self.project, "Issues", filename)
-
-            if not os.path.exists(os.path.dirname(path)):
-                try:
-                    os.makedirs(os.path.dirname(path))
-                except OSError as e:
-                    if e.errno != errno.EEXIST:
-                        raise
+            path = os.path.join(directory, filename)
             json_object = self.__prepare_json_object(issue)
             utils.save_as_json(json_object, path)
 
