@@ -4,9 +4,15 @@ import json
 from .ref_regex import *
 
 
-def save_as_json(obj: object, path: str):
+def save_as_json(obj: object, path: str) -> None:
     with open(path, "w") as file:
         json.dump(obj, file, indent=2)
+
+
+def load_json(path: str) -> dict:
+    with open(path, "r") as file:
+        loaded = json.load(file)
+    return loaded
 
 
 def create_dir_if_necessary(dir_path: str) -> None:
