@@ -1,8 +1,7 @@
-import errno
 import os
+import traceback
 
 from jira.client import JIRA
-from jira.resources import Issue
 from typing import List
 
 import utils
@@ -33,8 +32,13 @@ class JiraParser:
             block_index += 1
             issues.extend(fetched_issues)
             for issue in issues:
-                remote_links = self.jira.remote_links(issue["key"])
-                issue["remote_links"] = [link.raw for link in remote_links]
+                issue["remote_links"] = []
+                try:
+                    remote_links = self.jira.remote_links(issue["key"])
+                    issue["remote_links"] = [link.raw for link in remote_links]
+                except:
+                    print("An error occurred while trying to retrieve remote links for issue {}".format(issue["key"]))
+                    traceback.print_exc()
             print("{}: Fetched {} issues".format(self.project, len(issues)))
             if save:
                 first_issue = len(issues) - len(fetched_issues) + 1
