@@ -2,7 +2,6 @@ import json
 from jiraanalyzer import JiraParser
 import matplotlib.pyplot as plt
 import os
-import pickle
 from typing import List, Tuple, Set
 import shutil
 
@@ -41,7 +40,7 @@ def retrieve_and_save_issues(projects: List[str]) -> None:
     for project in projects:
         print("Fetching project {}".format(project))
         parser = JiraParser(project)
-        parser.fetch_issues()
+        parser.fetch_issues(save=True)
 
         parser.fetch_and_save_comments()
         utils.extract_and_save_urls_from_directory(input_directory=os.path.join("Projects", project, "Issues"),

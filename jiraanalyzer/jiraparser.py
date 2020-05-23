@@ -1,8 +1,9 @@
-import os
 import errno
+import os
 
 from jira.client import JIRA
 from jira.resources import Issue
+from typing import List
 
 import utils
 
@@ -16,7 +17,7 @@ class JiraParser:
         self.project = jira_project
         self.__issues = []
 
-    def fetch_issues(self, block_index: int = 0) -> None:
+    def fetch_issues(self, block_index: int = 0, save: bool = True) -> None:
         """
         Fetch all issues from the project and store them in the self.issues list
         """
@@ -31,8 +32,26 @@ class JiraParser:
             block_index += 1
             issues.extend(fetched_issues)
             print("{}: Fetched {} issues".format(self.project, len(issues)))
+            if save:
+                first_issue = len(issues) - len(fetched_issues) + 1
+                last_issue = len(issues)
+                self.__save_issues(fetched_issues, first_issue, last_issue)
         self.__issues = issues
-        print("{}: Finished fetching issues! Totally fetched: {}".format(self.project, len(issues)))
+        print("{}: Finished fetching {} issues! Totally fetched: {}".format(self.project,
+                                                                            "and saving" if save else "",
+                                                                            len(issues)))
+
+    def __save_issues(self, issues: List[Issue], first_issue: int, last_issue: int):
+        print("\t{}: Saving issues from {} to {}".format(self.project, first_issue, last_issue))
+        directory = os.path.join("Projects", self.project, "Issues_raw")
+        utils.create_dir_if_necessary(directory)
+        for issue in issues:
+            key = issue.raw["key"]
+            filename = key + ".json"
+            path = os.path.join(directory, filename)
+            utils.save_as_json(issue.raw, path)
+            print("\t\t{}: Saved issue {}".format(self.project, key))
+        print("\t{}: Successfully saved issues from {} to {}".format(self.project, first_issue, last_issue))
 
     def fetch_and_save_comments(self):
         """
