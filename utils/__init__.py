@@ -1,4 +1,5 @@
 import argparse
+import errno
 import json
 from .ref_regex import *
 
@@ -6,6 +7,15 @@ from .ref_regex import *
 def save_as_json(obj: object, path: str):
     with open(path, "w") as file:
         json.dump(obj, file, indent=2)
+
+
+def create_dir_if_necessary(dir_path: str) -> None:
+    if not os.path.exists(dir_path):
+        try:
+            os.makedirs(dir_path)
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
 
 
 def parse_arguments():
