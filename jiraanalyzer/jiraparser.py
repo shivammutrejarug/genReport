@@ -16,7 +16,7 @@ class JiraParser:
         self.jira = JIRA(server=APACHE_JIRA_SERVER)
         self.project = jira_project
 
-    def fetch_issues(self, block_index: int = 0, save: bool = True) -> List[Issue]:
+    def fetch_issues(self, block_index: int = 0, save: bool = True) -> List[dict]:
         """
         Fetch all issues from the project and store them in the self.issues list
         """
@@ -24,12 +24,17 @@ class JiraParser:
         block_size = 100
         while True:
             start_index = block_index * block_size
-            fetched_issues = self.jira.search_issues("project={}".format(self.project), startAt=start_index,
-                                                     maxResults=block_size, validate_query=True)
+            fetched_issues = [issue.raw for issue in self.jira.search_issues("project={}".format(self.project),
+                                                                             startAt=start_index,
+                                                                             maxResults=block_size,
+                                                                             validate_query=True)]
             if len(fetched_issues) == 0:
                 break
             block_index += 1
             issues.extend(fetched_issues)
+            for issue in issues:
+                remote_links = self.jira.remote_links(issue["key"])
+                issue["remote_links"] = [link.raw for link in remote_links]
             print("{}: Fetched {} issues".format(self.project, len(issues)))
             if save:
                 first_issue = len(issues) - len(fetched_issues) + 1
@@ -40,13 +45,13 @@ class JiraParser:
                                                                            len(issues)))
         return issues
 
-    def __save_issues(self, issues: List[Issue], first_issue: int, last_issue: int) -> None:
+    def __save_issues(self, issues: List[dict], first_issue: int, last_issue: int) -> None:
         directory = os.path.join("Projects", self.project, "Issues_raw")
         utils.create_dir_if_necessary(directory)
         for issue in issues:
-            filename = issue.raw["key"] + ".json"
+            filename = issue["key"] + ".json"
             path = os.path.join(directory, filename)
-            utils.save_as_json(issue.raw, path)
+            utils.save_as_json(issue, path)
         print("\t{}: Saved issues from {} to {}".format(self.project, first_issue, last_issue))
 
     def read_issues(self) -> List[dict]:
@@ -60,7 +65,7 @@ class JiraParser:
             issues.append(utils.load_json(path))
         return issues
 
-    def fetch_and_save_comments(self, issues: List[Issue]):
+    def fetch_and_save_comments(self, issues: List[dict]):
         """
         For each issue stored in the JiraParser object,
         fetch all comments and create a JSON file containing necessary information:
@@ -78,7 +83,7 @@ class JiraParser:
         directory = os.path.join("Projects", self.project, "Issues")
         utils.create_dir_if_necessary(directory)
         for count, issue in enumerate(issues, start=1):
-            filename = issue.raw["key"] + ".json"
+            filename = issue["key"] + ".json"
             path = os.path.join(directory, filename)
             json_object = self.__prepare_json_object(issue)
             utils.save_as_json(json_object, path)
@@ -87,7 +92,7 @@ class JiraParser:
                 print("{}: Saved {} issues and their comments".format(self.project, count))
         print("{}: Finished saving issues! Totally saved: {}".format(self.project, count))
 
-    def __prepare_json_object(self, issue: Issue) -> dict:
+    def __prepare_json_object(self, issue: dict) -> dict:
         """
         Prepare a dictionary containing the following data:
         {
@@ -106,14 +111,29 @@ class JiraParser:
         :return: Dictionary ready to be converted to JSON
         """
         json_object = dict()
-        json_object["issue_key"] = issue.raw["key"]
-        json_object["status"] = issue.raw["fields"]["status"]["name"]
-        json_object["created"] = issue.raw["fields"]["created"]
-        json_object["updated"] = issue.raw["fields"]["updated"]
+        json_object["issue_key"] = issue["key"]
+        fields = issue["fields"]
+        json_object["status"] = fields["status"]["name"]
+        json_object["created"] = fields["created"]
+        json_object["updated"] = fields["updated"]
+
+        json_object["issue_links"] = []
+        issue_links = json_object["issue_links"]
+        for link in fields["issuelinks"]:
+            link_dict = dict()
+            link_dict["type"] = ""
+            link_dict["outward_issue"] = ""
+            link_dict["inward_issue"] = ""
+            if hasattr(link, "outwardIssue"):
+                link_dict["type"] = "Outward Issue"
+                link_dict["outward_issue"] = link["outwardIssue"]["key"]
+            elif hasattr(link, "inwardIssue"):
+                link_dict["type"] = "Inward Issue"
+                link_dict["inward_issue"] = link["InwardIssue"]["key"]
+            issue_links.append(link_dict)
+
         json_object["comments"] = []
-
         comments = json_object["comments"]
-
         for comment in self.jira.comments(issue):
             comment_dict = dict()
             comment_dict["author"] = comment.raw["author"]["name"]
