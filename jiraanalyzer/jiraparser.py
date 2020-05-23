@@ -52,6 +52,17 @@ class JiraParser:
             print("\t\t{}: Saved issue {}".format(self.project, key))
         print("\t{}: Successfully saved issues from {} to {}".format(self.project, first_issue, last_issue))
 
+    def read_issues(self) -> List[dict]:
+        directory = os.path.join("Projects", self.project, "Issues_raw")
+        if not os.path.exists(directory):
+            return []
+        issues = []
+        files = os.listdir(directory)
+        for filename in files:
+            path = os.path.join(directory, filename)
+            issues.append(utils.load_json(path))
+        return issues
+
     def fetch_and_save_comments(self, issues: List[Issue]):
         """
         For each issue stored in the JiraParser object,
