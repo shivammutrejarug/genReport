@@ -35,9 +35,9 @@ class JiraParser:
                 first_issue = len(issues) - len(fetched_issues) + 1
                 last_issue = len(issues)
                 self.__save_issues(fetched_issues, first_issue, last_issue)
-        print("{}: Finished fetching {} issues! Totally fetched: {}".format(self.project,
-                                                                            "and saving" if save else "",
-                                                                            len(issues)))
+        print("{}: Finished fetching{} issues! Totally fetched: {}".format(self.project,
+                                                                           " and saving" if save else "",
+                                                                           len(issues)))
         return issues
 
     def __save_issues(self, issues: List[Issue], first_issue: int, last_issue: int) -> None:
@@ -45,12 +45,10 @@ class JiraParser:
         directory = os.path.join("Projects", self.project, "Issues_raw")
         utils.create_dir_if_necessary(directory)
         for issue in issues:
-            key = issue.raw["key"]
-            filename = key + ".json"
+            filename = issue.raw["key"] + ".json"
             path = os.path.join(directory, filename)
             utils.save_as_json(issue.raw, path)
-            print("\t\t{}: Saved issue {}".format(self.project, key))
-        print("\t{}: Successfully saved issues from {} to {}".format(self.project, first_issue, last_issue))
+        print("\t{}: Saved issues from {} to {}".format(self.project, first_issue, last_issue))
 
     def read_issues(self) -> List[dict]:
         directory = os.path.join("Projects", self.project, "Issues_raw")
