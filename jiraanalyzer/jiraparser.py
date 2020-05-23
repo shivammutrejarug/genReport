@@ -58,7 +58,7 @@ class JiraParser:
             utils.save_as_json(issue, path)
         print("\t{}: Saved issues from {} to {}".format(self.project, first_issue, last_issue))
 
-    def read_issues(self) -> List[dict]:
+    def load_issues(self) -> List[dict]:
         directory = os.path.join("Projects", self.project, "Issues_raw")
         if not os.path.exists(directory):
             return []
@@ -128,13 +128,21 @@ class JiraParser:
             link_dict["type"] = ""
             link_dict["outward_issue"] = ""
             link_dict["inward_issue"] = ""
-            if hasattr(link, "outwardIssue"):
+            if "outwardIssue" in link:
                 link_dict["type"] = "Outward Issue"
                 link_dict["outward_issue"] = link["outwardIssue"]["key"]
-            elif hasattr(link, "inwardIssue"):
+            elif "inwardIssue" in link:
                 link_dict["type"] = "Inward Issue"
                 link_dict["inward_issue"] = link["InwardIssue"]["key"]
             issue_links.append(link_dict)
+
+        json_object["remote_links"] = []
+        remote_links = json_object["remote_links"]
+        for link in issue["remote_links"]:
+            link_dict = dict()
+            link_dict["title"] = link["object"]["title"]
+            link_dict["url"] = link["object"]["url"]
+            remote_links.append(link_dict)
 
         json_object["comments"] = []
         comments = json_object["comments"]
