@@ -35,18 +35,6 @@ PROJECTS_WITH_PULL_REQUESTS = [
     "NUTCH"  # Nutch https://issues.apache.org/jira/projects/NUTCH/summary
 ]
 
-
-def retrieve_and_save_issues(projects: List[str]) -> None:
-    for project in projects:
-        print("Fetching project {}".format(project))
-        parser = JiraParser(project)
-        parser.fetch_issues(save=True)
-
-        parser.fetch_and_save_comments()
-        utils.extract_and_save_urls_from_directory(input_directory=os.path.join("Projects", project, "Issues"),
-                                                   output_directory=os.path.join("Projects", project, "URLs"))
-
-
 args = utils.parse_arguments()
 projects = [args.jira_project] if args.jira_project else PROJECTS
 
@@ -130,7 +118,7 @@ def generate_statistics(project: str):
     into blocks of 100 issues for a broader analysis of the data.
     :param project: Project to parse references from
     :return: Generated statistics
-    #TODO type annotations and better documentation
+    #TODO better documentation
     """
     issues = []
     reference_directory = os.path.join("Projects", project, "References")
@@ -180,7 +168,8 @@ def generate_statistics(project: str):
     return statistics
 
 
-def make_plot(project: str, statistics: List[Tuple[int, int, int, int, int, int]], blocks: List[int], param_idx: int, param_title: str):
+def make_plot(project: str, statistics: List[Tuple[int, int, int, int, int, int]], blocks: List[int], param_idx: int,
+              param_title: str):
     x = blocks
     y = [param[param_idx] for param in statistics]
     plt.plot(x, y)
@@ -208,6 +197,12 @@ def make_plots(project: str, statistics: List[Tuple[int, int, int, int, int, int
         make_plot(project, statistics, blocks, t[0], t[1])
 
 
-statistics = generate_statistics("PDFBOX")
-
-make_plots("PDFBOX", statistics)
+project = "PDFBOX"
+parser = JiraParser(project)
+# parser.fetch_comments()
+# parser.parse_issues(parser.load_issues())
+utils.extract_and_save_urls_from_directory(input_directory=os.path.join("Projects", project, "Issues"),
+                                           output_directory=os.path.join("Projects", project, "URLs"))
+# statistics = generate_statistics("PDFBOX")
+#
+# make_plots("PDFBOX", statistics)
