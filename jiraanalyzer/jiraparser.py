@@ -69,10 +69,36 @@ class JiraParser:
             issues.append(utils.load_json(path))
         return issues
 
-    def fetch_and_save_comments(self, issues: List[dict]):
+    def fetch_comments(self):
+        issues_dir = os.path.join("Projects", self.project, "Issues_raw")
+        if not os.path.exists(issues_dir):
+            return
+        files = os.listdir(issues_dir)
+
+        comments_dir = os.path.join("Projects", self.project, "Comments")
+        utils.create_dir_if_necessary(comments_dir)
+        count = 1
+        for filename in files:
+            path = os.path.join(comments_dir, filename)
+            issue_key = os.path.splitext(filename)[0]
+            comments = [comment.raw for comment in self.jira.comments(issue_key)]
+            comments_dict = dict()
+            comments_dict["issue_key"] = issue_key
+            comments_dict["comments"] = []
+            for comment in comments:
+                comment_dict = dict()
+                comment_dict["author"] = comment["author"]["name"]
+                comment_dict["created"] = comment["created"]
+                comment_dict["updated"] = comment["updated"]
+                comment_dict["body"] = comment["body"]
+                comments_dict["comments"].append(comment_dict)
+            utils.save_as_json(comments_dict, path)
+            print("{}: Fetched comments for {}. Total: {}".format(self.project, issue_key, count))
+            count += 1
+
+    def parse_issues(self, issues: List[dict]):
         """
-        For each issue stored in the JiraParser object,
-        fetch all comments and create a JSON file containing necessary information:
+        For each issue, create a JSON file containing necessary information:
         1. Issue key
         2. Date of its creation
         3. Date of its update
