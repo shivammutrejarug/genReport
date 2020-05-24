@@ -159,7 +159,7 @@ class JiraParser:
                 link_dict["outward_issue"] = link["outwardIssue"]["key"]
             elif "inwardIssue" in link:
                 link_dict["type"] = "Inward Issue"
-                link_dict["inward_issue"] = link["InwardIssue"]["key"]
+                link_dict["inward_issue"] = link["inwardIssue"]["key"]
             issue_links.append(link_dict)
 
         json_object["remote_links"] = []
@@ -172,12 +172,16 @@ class JiraParser:
 
         json_object["comments"] = []
         comments = json_object["comments"]
-        for comment in self.jira.comments(issue):
-            comment_dict = dict()
-            comment_dict["author"] = comment.raw["author"]["name"]
-            comment_dict["created"] = comment.raw["created"]
-            comment_dict["updated"] = comment.raw["updated"]
-            comment_dict["body"] = comment.raw["body"]
-            comments.append(comment_dict)
+        comments_dir = os.path.join("Projects", self.project, "Comments")
+        path = os.path.join(comments_dir, issue["key"] + ".json")
+        if os.path.exists(path):
+            loaded_comments = utils.load_json(path)["comments"]
+            for comment in loaded_comments:
+                comment_dict = dict()
+                comment_dict["author"] = comment["author"]
+                comment_dict["created"] = comment["created"]
+                comment_dict["updated"] = comment["updated"]
+                comment_dict["body"] = comment["body"]
+                comments.append(comment_dict)
 
         return json_object
