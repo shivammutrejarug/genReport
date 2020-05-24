@@ -151,9 +151,7 @@ class JiraParser:
         issue_links = json_object["issue_links"]
         for link in fields["issuelinks"]:
             link_dict = dict()
-            link_dict["type"] = ""
-            link_dict["outward_issue"] = ""
-            link_dict["inward_issue"] = ""
+            link_dict["type"] = link["type"]["name"]
             if "outwardIssue" in link:
                 link_dict["type"] = "Outward Issue"
                 link_dict["outward_issue"] = link["outwardIssue"]["key"]
