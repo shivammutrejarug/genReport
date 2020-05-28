@@ -43,7 +43,7 @@ projects = [args.jira_project] if args.jira_project else PROJECTS
 # retrieve_and_save_issues(projects)
 
 
-def collect_issues_summary(project: str) -> List[Tuple[str, int, Set[str], Set[str], Set[str], Set[str]]]:
+def collect_issues_summary(project: str) -> List[Tuple[str, int, Set[str], Set[str], Set[str], Set[str], Set[str]]]:
     """
     For each Issue inside Projects/<project>/Issues, extract all types of references and return a data type containing
     all the necessary data
@@ -66,6 +66,8 @@ def collect_issues_summary(project: str) -> List[Tuple[str, int, Set[str], Set[s
             revisions = set()
             mailing_lists = set()
             pdf_documents = set()
+            other_issues = set()
+
             for comment in data["comments"]:
                 comment_body = comment["body"]
                 comment_urls = set(utils.extract_urls(comment_body, filter_revisions=True))
@@ -82,13 +84,19 @@ def collect_issues_summary(project: str) -> List[Tuple[str, int, Set[str], Set[s
                 mailing_lists.update(comment_mailing_lists)
                 pdf_documents.update(comment_pdf_documents)
 
+            for issue in data["issue_links"]:
+                other_issues.add(issue["issue_key"])
+
+            remote_links = [remote_link["url"] for remote_link in data["remote_links"]]
+            urls.update(remote_links)
             issues.append(
-                (issue_key, issue_id, urls, revisions, mailing_lists, pdf_documents)
+                (issue_key, issue_id, urls, revisions, mailing_lists, pdf_documents, other_issues)
             )
     return issues
 
 
-def save_references(project: str, issues: List[Tuple[str, int, Set[str], Set[str], Set[str], Set[str]]]) -> None:
+def save_references(project: str,
+                    issues: List[Tuple[str, int, Set[str], Set[str], Set[str], Set[str], Set[str]]]) -> None:
     """
     Save references for each issue in JSON format
     :param project: Project to write references for
@@ -104,10 +112,15 @@ def save_references(project: str, issues: List[Tuple[str, int, Set[str], Set[str
         issue_dict = dict()
         issue_dict["issue_key"] = issue[0]
         issue_dict["issue_id"] = issue[1]
-        issue_dict["urls"] = list(issue[2])
+        issue_dict["urls"] = list(issue[2])  # parser.parse_issues(parser.load_issues())
+        # utils.extract_and_save_urls_from_directory(input_directory=os.path.join("Projects", project, "Issues"),
+        #                                            output_directory=os.path.join("Projects", project, "URLs"))
+        # statistics = generate_statistics("PDFBOX")
+        #
         issue_dict["revisions"] = list(issue[3])
         issue_dict["mailing_lists"] = list(issue[4])
         issue_dict["pdf_documents"] = list(issue[5])
+        issue_dict["other_issues"] = list(issue[6])
         path = os.path.join(reference_dir, issue[0] + ".json")
         utils.save_as_json(issue_dict, path)
 
@@ -133,7 +146,8 @@ def generate_statistics(project: str):
                  list(data["urls"]),
                  list(data["revisions"]),
                  list(data["mailing_lists"]),
-                 list(data["pdf_documents"]))
+                 list(data["pdf_documents"]),
+                 list(data["other_issues"]))
             )
     issues = sorted(issues, key=lambda x: x[1])
 
@@ -197,12 +211,12 @@ def make_plots(project: str, statistics: List[Tuple[int, int, int, int, int, int
         make_plot(project, statistics, blocks, t[0], t[1])
 
 
-project = "PDFBOX"
+project = "DERBY"
 parser = JiraParser(project)
-# parser.fetch_comments()
-# parser.parse_issues(parser.load_issues())
-utils.extract_and_save_urls_from_directory(input_directory=os.path.join("Projects", project, "Issues"),
-                                           output_directory=os.path.join("Projects", project, "URLs"))
-# statistics = generate_statistics("PDFBOX")
-#
-# make_plots("PDFBOX", statistics)
+issues = parser.fetch_issues(save=True)
+parser.fetch_comments()
+parser.parse_issues(issues)
+
+issues_summary = collect_issues_summary(project)
+save_references(project, issues_summary)
+generate_statistics(project)
