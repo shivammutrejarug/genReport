@@ -151,11 +151,10 @@ class JiraParser:
         issue_links = json_object["issue_links"]
         for link in fields["issuelinks"]:
             link_dict = dict()
+            link_dict["type"] = link["type"]["name"]
             if "outwardIssue" in link:
-                link_dict["type"] = "Outward Issue"
                 link_dict["issue_key"] = link["outwardIssue"]["key"]
             elif "inwardIssue" in link:
-                link_dict["type"] = "Inward Issue"
                 link_dict["issue_key"] = link["inwardIssue"]["key"]
             issue_links.append(link_dict)
 
