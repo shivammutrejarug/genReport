@@ -93,7 +93,7 @@ def clean_text(text: str) -> str:
     :param text: Text to remove characters from
     :return: Cleaned text
     """
-    chars_to_remove = [r'\n', '(', ')', '[', ']', '<', '>', '\\']
+    chars_to_remove = [r'\n', '[', ']', '<', '>', '\\']
     for char in chars_to_remove:
         text = text.replace(char, ' ')
     return text
