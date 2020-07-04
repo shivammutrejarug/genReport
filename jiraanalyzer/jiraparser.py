@@ -27,16 +27,16 @@ class JiraParser:
                                                                              startAt=start_index,
                                                                              maxResults=block_size,
                                                                              validate_query=True,
-                                                                             expand="attachment")]
+                                                                             fields="comment,attachment,issuelinks")]
             if len(fetched_issues) == 0:
                 break
             block_index += 1
             issues.extend(fetched_issues)
             for issue in issues:
-                issue["remote_links"] = []
+                issue["remotelinks"] = []
                 try:
                     remote_links = self.jira.remote_links(issue["key"])
-                    issue["remote_links"] = [link.raw for link in remote_links]
+                    issue["remotelinks"] = [link.raw for link in remote_links]
                 except:
                     print("An error occurred while trying to retrieve remote links for issue {}".format(issue["key"]))
                     traceback.print_exc()
@@ -70,33 +70,6 @@ class JiraParser:
             issues.append(utils.load_json(path))
         return issues
 
-    def fetch_comments(self):
-        issues_dir = os.path.join("Projects", self.project, "Issues_raw")
-        if not os.path.exists(issues_dir):
-            return
-        files = os.listdir(issues_dir)
-
-        comments_dir = os.path.join("Projects", self.project, "Comments")
-        utils.create_dir_if_necessary(comments_dir)
-        count = 1
-        for filename in files:
-            path = os.path.join(comments_dir, filename)
-            issue_key = os.path.splitext(filename)[0]
-            comments = [comment.raw for comment in self.jira.comments(issue_key)]
-            comments_dict = dict()
-            comments_dict["issue_key"] = issue_key
-            comments_dict["comments"] = []
-            for comment in comments:
-                comment_dict = dict()
-                comment_dict["author"] = comment["author"]["name"]
-                comment_dict["created"] = comment["created"]
-                comment_dict["updated"] = comment["updated"]
-                comment_dict["body"] = comment["body"]
-                comments_dict["comments"].append(comment_dict)
-            utils.save_as_json(comments_dict, path)
-            print("{}: Fetched comments for {}. Total: {}".format(self.project, issue_key, count))
-            count += 1
-
     def parse_issues(self, issues: List[dict]):
         """
         For each issue, create a JSON file containing necessary information:
@@ -123,7 +96,8 @@ class JiraParser:
                 print("{}: Saved {} issues and their comments".format(self.project, count))
         print("{}: Finished saving issues! Totally saved: {}".format(self.project, count))
 
-    def __prepare_json_object(self, issue: dict) -> dict:
+    @staticmethod
+    def __prepare_json_object(issue: dict) -> dict:
         """
         Prepare a dictionary containing the following data:
         {
@@ -148,8 +122,8 @@ class JiraParser:
         json_object["created"] = fields["created"]
         json_object["updated"] = fields["updated"]
 
-        json_object["issue_links"] = []
-        issue_links = json_object["issue_links"]
+        json_object["issuelinks"] = []
+        issue_links = json_object["issuelinks"]
         for link in fields["issuelinks"]:
             link_dict = dict()
             link_dict["type"] = link["type"]["name"]
@@ -159,9 +133,9 @@ class JiraParser:
                 link_dict["issue_key"] = link["inwardIssue"]["key"]
             issue_links.append(link_dict)
 
-        json_object["remote_links"] = []
-        remote_links = json_object["remote_links"]
-        for link in issue["remote_links"]:
+        json_object["remotelinks"] = []
+        remote_links = json_object["remotelinks"]
+        for link in issue["remotelinks"]:
             link_dict = dict()
             link_dict["title"] = link["object"]["title"]
             link_dict["url"] = link["object"]["url"]
@@ -169,16 +143,13 @@ class JiraParser:
 
         json_object["comments"] = []
         comments = json_object["comments"]
-        comments_dir = os.path.join("Projects", self.project, "Comments")
-        path = os.path.join(comments_dir, issue["key"] + ".json")
-        if os.path.exists(path):
-            loaded_comments = utils.load_json(path)["comments"]
-            for comment in loaded_comments:
-                comment_dict = dict()
-                comment_dict["author"] = comment["author"]
-                comment_dict["created"] = comment["created"]
-                comment_dict["updated"] = comment["updated"]
-                comment_dict["body"] = comment["body"]
-                comments.append(comment_dict)
+
+        for comment in fields["comment"]["comments"]:
+            comment_dict = dict()
+            comment_dict["author"] = comment["author"]["name"]
+            comment_dict["created"] = comment["created"]
+            comment_dict["updated"] = comment["updated"]
+            comment_dict["body"] = comment["body"]
+            comments.append(comment_dict)
 
         return json_object

@@ -211,12 +211,12 @@ def make_plots(project: str, statistics: List[Tuple[int, int, int, int, int, int
         make_plot(project, statistics, blocks, t[0], t[1])
 
 
-project = "DERBY"
+project = "PDFBOX"
 parser = JiraParser(project)
 issues = parser.fetch_issues(save=True)
-parser.fetch_comments()
-parser.parse_issues(issues)
+# parser.fetch_comments()
+# parser.parse_issues(issues)
 
-issues_summary = collect_issues_summary(project)
-save_references(project, issues_summary)
-generate_statistics(project)
+# issues_summary = collect_issues_summary(project)
+# save_references(project, issues_summary)
+# generate_statistics(project)
