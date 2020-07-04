@@ -21,13 +21,14 @@ class JiraParser:
         """
         issues = []
         block_size = 100
+        fields = "comment,attachment,issuelinks,status,issuetype,summary,description,created,updated,project,creator"
         while True:
             start_index = block_index * block_size
             fetched_issues = [issue.raw for issue in self.jira.search_issues("project={}".format(self.project),
                                                                              startAt=start_index,
                                                                              maxResults=block_size,
                                                                              validate_query=True,
-                                                                             fields="comment,attachment,issuelinks")]
+                                                                             fields=fields)]
             if len(fetched_issues) == 0:
                 break
             block_index += 1
@@ -116,11 +117,21 @@ class JiraParser:
         :return: Dictionary ready to be converted to JSON
         """
         json_object = dict()
-        json_object["issue_key"] = issue["key"]
         fields = issue["fields"]
-        json_object["status"] = fields["status"]["name"]
+        creator = fields["creator"]
+
+        json_object["issue_key"] = issue["key"]
+        json_object["project"] = dict()
+        project = json_object["project"]
+        project["key"] = fields["project"]["key"]
+        project["name"] = fields["project"]["name"]
+        json_object["author"] = creator["name"] if creator else None
         json_object["created"] = fields["created"]
         json_object["updated"] = fields["updated"]
+        json_object["status"] = fields["status"]["name"]
+
+        json_object["summary"] = fields["summary"]
+        json_object["description"] = fields["description"]
 
         json_object["issuelinks"] = []
         issue_links = json_object["issuelinks"]
