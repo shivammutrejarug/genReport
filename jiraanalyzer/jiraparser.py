@@ -31,8 +31,7 @@ class JiraParser:
             if len(fetched_issues) == 0:
                 break
             block_index += 1
-            issues.extend(fetched_issues)
-            for issue in issues:
+            for issue in fetched_issues:
                 issue["remotelinks"] = []
                 try:
                     remote_links = self.jira.remote_links(issue["key"])
@@ -40,6 +39,7 @@ class JiraParser:
                 except:
                     print("An error occurred while trying to retrieve remote links for issue {}".format(issue["key"]))
                     traceback.print_exc()
+            issues.extend(fetched_issues)
             print("{}: Fetched {} issues".format(self.project, len(issues)))
             if save:
                 first_issue = len(issues) - len(fetched_issues) + 1
