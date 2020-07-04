@@ -26,7 +26,8 @@ class JiraParser:
             fetched_issues = [issue.raw for issue in self.jira.search_issues("project={}".format(self.project),
                                                                              startAt=start_index,
                                                                              maxResults=block_size,
-                                                                             validate_query=True)]
+                                                                             validate_query=True,
+                                                                             expand="attachment")]
             if len(fetched_issues) == 0:
                 break
             block_index += 1
