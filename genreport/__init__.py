@@ -1,3 +1,4 @@
+from jira import Issue
 from pylatex import Document, Section, Subsection, Package, Hyperref
 from pylatex.utils import escape_latex, NoEscape
 import utils
@@ -5,7 +6,7 @@ import os
 
 
 class ReportGenerator:
-    def __init__(self, project, issue, github_repository=None):
+    def __init__(self, project: str, issue: Issue, github_repository: str = None):
         self.project = project
         self.issue = issue
         self.github_repository = github_repository
