@@ -3,6 +3,8 @@ from pylatex.utils import escape_latex, NoEscape
 import utils
 import os
 
+from genreport.issueretriever import IssueRetriever
+
 
 class ReportGenerator:
     def __init__(self, project, issue, github_repository=None):
@@ -32,4 +34,6 @@ class ReportGenerator:
             doc.append("Created: {}\n".format(data["created"]))
             doc.append("Updated: {}\n".format(data["updated"]))
             with doc.create(Subsection("Attachments")):
-                for
+                doc.append()
+
+
