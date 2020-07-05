@@ -1,6 +1,6 @@
-import os
-
 import utils
+
+from genreport import ReportGenerator
 
 
 def test_regex():
@@ -21,13 +21,18 @@ def test_svn_url_construction():
 # print(utils.extract_urls("https://svn.apache.org/r1231331  https://svn.apache.or/ https://vk.com", filter_revisions=False))
 
 
-for filename in os.listdir("Projects/PDFBOX/URLs"):
-    with open(os.path.join("Projects/PDFBOX/URLs", filename), 'r') as file:
-        mailing_lists = utils.filter_mailing_list_urls(set(file.readlines()))
-        if len(mailing_lists) == 0:
-            continue
-        print(filename)
-        for ml in mailing_lists:
-            print(ml)
-        print()
+# for filename in os.listdir("Projects/PDFBOX/URLs"):
+#     with open(os.path.join("Projects/PDFBOX/URLs", filename), 'r') as file:
+#         mailing_lists = utils.filter_mailing_list_urls(set(file.readlines()))
+#         if len(mailing_lists) == 0:
+#             continue
+#         print(filename)
+#         for ml in mailing_lists:
+#             print(ml)
+#         print()
 
+
+issue_key = "PDFBOX-4908"
+issue = utils.load_json("Projects/PDFBOX/Issues/PDFBOX-4908.json")
+generator = ReportGenerator("PDFBOX", issue_key)
+generator.generate_report()
