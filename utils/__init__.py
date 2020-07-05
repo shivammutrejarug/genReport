@@ -92,7 +92,7 @@ def atlassian_code_format_to_listing(string: str) -> str:
     string = string.replace(r"{code:java}", r"\begin{lstlisting}[language=Java]")
     string = string.replace(r"{code}", r"\end{lstlisting}")
 
-    while string.find(r"{noformat}") is not -1:
+    while string.find(r"{noformat}") != -1:
         string = string.replace(r"{noformat}", r"\begin{lstlisting}", 1)
         string = string.replace(r"{noformat}", r"\end{lstlisting}", 1)
 
