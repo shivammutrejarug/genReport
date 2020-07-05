@@ -133,6 +133,14 @@ class JiraParser:
         json_object["summary"] = fields["summary"]
         json_object["description"] = fields["description"]
 
+        json_object["attachments"] = list()
+        attachments = json_object["attachments"]
+        for attachment in fields["attachment"]:
+            attachment_dict = dict()
+            attachment_dict["filename"] = attachment["filename"]
+            attachment_dict["content"] = attachment["content"]
+            attachments.append(attachment_dict)
+
         json_object["issuelinks"] = []
         issue_links = json_object["issuelinks"]
         for link in fields["issuelinks"]:
