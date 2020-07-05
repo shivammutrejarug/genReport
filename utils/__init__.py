@@ -86,3 +86,14 @@ def extract_and_save_urls_from_directory(input_directory: str, output_directory:
         output_path = os.path.join(output_directory, output_file)
         with open(output_path, 'w') as file:
             file.write('\n'.join(urls))
+
+
+def atlassian_code_format_to_listing(string: str) -> str:
+    string = string.replace(r"{code:java}", r"\begin{lstlisting}[language=Java]")
+    string = string.replace(r"{code}", r"\end{lstlisting}")
+
+    while string.find(r"{noformat}") is not -1:
+        string = string.replace(r"{noformat}", r"\begin{lstlisting}", 1)
+        string = string.replace(r"{noformat}", r"\end{lstlisting}", 1)
+
+    return string
