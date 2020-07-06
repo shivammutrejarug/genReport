@@ -2,10 +2,16 @@ import re
 
 from typing import List
 
-# Taken from http://www.noah.org/wiki/RegEx_Python#URL_regex_pattern
-URL_REGEX = r'http[s]?://(?:[\~\#a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[\~\#0-9a-fA-F][\~\#0-9a-fA-F]))+'
-REVISION_REGEX = r'(?:r|[Rr]ev. |[Rr]evision |[Cc]ommit )[0-9]+'
-NUMBER_REGEX = r'\d+'
+# Regex developed by Diego Perini: https://gist.github.com/dperini/729294
+# Was converted from JS to Python using https://regex101.com/
+URL_REGEX = r"^(?:(?:(?:https?|ftp):)?\/\/)(?:\S+(?::\S*)?@)?(?:(?!(?:10|127)" \
+            r"(?:\.\d{1,3}){3})(?!(?:169\.254|192\.168)(?:\.\d{1,3}){2})(?!172\." \
+            r"(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})(?:[1-9]\d?|1\d\d|2[01]\d|22[0-3])" \
+            r"(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))" \
+            r"|(?:(?:[a-z0-9\u00a1-\uffff][a-z0-9\u00a1-\uffff_-]{0,62})?[a-z0-9\u00a1-\uffff]\.)" \
+            r"+(?:[a-z\u00a1-\uffff]{2,}\.?))(?::\d{2,5})?(?:[/?#]\S*)?$"
+REVISION_REGEX = r"(?:r|[Rr]ev. |[Rr]evision |[Cc]ommit )[0-9]+"
+NUMBER_REGEX = r"d+"
 
 url_matcher = re.compile(URL_REGEX)
 revision_matcher = re.compile(REVISION_REGEX)
