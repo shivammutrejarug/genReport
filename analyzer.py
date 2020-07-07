@@ -1,5 +1,5 @@
 import json
-from jiraanalyzer import JiraParser
+from parser import JiraParser
 import matplotlib.pyplot as plt
 import os
 from typing import List, Tuple, Set

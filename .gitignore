@@ -134,7 +134,7 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# pytype static type analyzer
+# pytype static type parser
 .pytype/
 
 # Cython debug symbols
@@ -146,7 +146,7 @@ cython_debug/
 .idea/inspectionProfiles/
 .idea/misc.xml
 .idea/modules.xml
-jiraanalyzer/__pycache__/
+parser/__pycache__/
 utils/__pycache__/
 /Projects/
 .idea/vcs.xml
