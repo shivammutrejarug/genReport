@@ -4,12 +4,12 @@ from typing import List
 
 # Regex developed by Diego Perini: https://gist.github.com/dperini/729294
 # Was converted from JS to Python using https://regex101.com/
-URL_REGEX = r"^(?:(?:(?:https?|ftp):)?\/\/)(?:\S+(?::\S*)?@)?(?:(?!(?:10|127)" \
+URL_REGEX = r"(?:(?:(?:https?|ftp):)?\/\/)(?:\S+(?::\S*)?@)?(?:(?!(?:10|127)" \
             r"(?:\.\d{1,3}){3})(?!(?:169\.254|192\.168)(?:\.\d{1,3}){2})(?!172\." \
             r"(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})(?:[1-9]\d?|1\d\d|2[01]\d|22[0-3])" \
             r"(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))" \
             r"|(?:(?:[a-z0-9\u00a1-\uffff][a-z0-9\u00a1-\uffff_-]{0,62})?[a-z0-9\u00a1-\uffff]\.)" \
-            r"+(?:[a-z\u00a1-\uffff]{2,}\.?))(?::\d{2,5})?(?:[/?#]\S*)?$"
+            r"+(?:[a-z\u00a1-\uffff]{2,}\.?))(?::\d{2,5})?(?:[/?#]\S*)?"
 REVISION_REGEX = r"(?:r|[Rr]ev. |[Rr]evision |[Cc]ommit )[0-9]+"
 NUMBER_REGEX = r"d+"
 
@@ -25,7 +25,8 @@ def extract_urls(text: str, filter_revisions=False) -> List[str]:
     :param filter_revisions: Whether to ignore revision URLs
     :return: List of extracted URLs
     """
-    urls = url_matcher.findall(clean_text(text))
+
+    urls = url_matcher.findall(text)
     urls = list(
         map(
             # if a URL ends with '.', '\' or '?', then we should remove that character
