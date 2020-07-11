@@ -14,6 +14,7 @@ class JiraParser:
     def __init__(self, jira_project: str):
         self.jira = JIRA(server=APACHE_JIRA_SERVER)
         self.project = jira_project
+        self.fields = "comment,attachment,issuelinks,status,issuetype,summary,description,created,updated,project,creator"
 
     def fetch_issues(self, block_index: int = 0, save: bool = True) -> List[dict]:
         """
@@ -21,14 +22,13 @@ class JiraParser:
         """
         issues = []
         block_size = 100
-        fields = "comment,attachment,issuelinks,status,issuetype,summary,description,created,updated,project,creator"
         while True:
             start_index = block_index * block_size
             fetched_issues = [issue.raw for issue in self.jira.search_issues("project={}".format(self.project),
                                                                              startAt=start_index,
                                                                              maxResults=block_size,
                                                                              validate_query=True,
-                                                                             fields=fields)]
+                                                                             fields=self.fields)]
             if len(fetched_issues) == 0:
                 break
             block_index += 1
@@ -51,14 +51,21 @@ class JiraParser:
                                                                            len(issues)))
         return issues
 
-    def __save_issues(self, issues: List[dict], first_issue: int, last_issue: int) -> None:
+    def fetch_issue(self, issue_key: str, save: bool = True):
+        issue = self.jira.issue(issue_key, self.fields).raw
+        if save:
+            self.__save_issues([issue])
+        return issue
+
+    def __save_issues(self, issues: List[dict], first_issue: int = None, last_issue: int = None) -> None:
         directory = os.path.join("Projects", self.project, "Issues_raw")
         utils.create_dir_if_necessary(directory)
         for issue in issues:
             filename = issue["key"] + ".json"
             path = os.path.join(directory, filename)
             utils.save_as_json(issue, path)
-        print("\t{}: Saved issues from {} to {}".format(self.project, first_issue, last_issue))
+        if first_issue and last_issue:
+            print("\t{}: Saved issues from {} to {}".format(self.project, first_issue, last_issue))
 
     def load_issues(self) -> List[dict]:
         directory = os.path.join("Projects", self.project, "Issues_raw")
