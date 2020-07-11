@@ -1,6 +1,6 @@
 import re
 
-from typing import List
+from typing import List, Set
 
 # Regex developed by Diego Perini: https://gist.github.com/dperini/729294
 # Was converted from JS to Python using https://regex101.com/
@@ -18,16 +18,16 @@ revision_matcher = re.compile(REVISION_REGEX)
 number_matcher = re.compile(NUMBER_REGEX)
 
 
-def extract_urls(text: str, filter_revisions=False) -> List[str]:
+def extract_urls(text: str, filter_revisions=False) -> Set[str]:
     """
-    Extract URLs from the text. If filter_revisions set to True, all URLs belonging to SVN revisions are ignored.
+    Extract unique URLs from the text. If filter_revisions set to True, all URLs belonging to SVN revisions are ignored.
     :param text: Text to extract URLs from
     :param filter_revisions: Whether to ignore revision URLs
-    :return: List of extracted URLs
+    :return: Set of extracted URLs
     """
 
-    urls = url_matcher.findall(text)
-    urls = list(
+    urls = set(url_matcher.findall(text))
+    urls = set(
         map(
             # if a URL ends with '.', '\' or '?', then we should remove that character
             lambda url: url[:-1] if url[-1] in ['.', '\\', '?'] else url,
@@ -35,7 +35,7 @@ def extract_urls(text: str, filter_revisions=False) -> List[str]:
         )
     )
     if filter_revisions:
-        urls = list(
+        urls = set(
             filter(
                 lambda url: not url.startswith("https://svn.apache.org"),
                 urls
@@ -44,7 +44,7 @@ def extract_urls(text: str, filter_revisions=False) -> List[str]:
     return urls
 
 
-def extract_issues(text: str, project_name: str) -> List[str]:
+def extract_issues(text: str, project_name: str) -> Set[str]:
     """
     Extract all issue IDs from the text. Each issue ID has the form <project_name>-{int_id}.
     :param text: Text to extract issue IDs from
@@ -52,28 +52,33 @@ def extract_issues(text: str, project_name: str) -> List[str]:
     :return: List of issue IDs
     """
     issue_matcher = re.compile("{}-{}".format(project_name, r'\d+'))
-    return list(issue_matcher.findall(text))
+    return set(issue_matcher.findall(text))
 
 
-def extract_revisions(text: str) -> List[str]:
+def extract_revisions(text: str) -> Set[str]:
     """
     Extract all revision IDs mentioned in the text.
     :param text: Text to extract revisions IDs from
     :return: List containing extracted revision IDs
     """
-    return revision_matcher.findall(text)
+    return set(revision_matcher.findall(text))
 
 
-def extract_numbers(text: str) -> List[str]:
+def extract_numbers(text: str) -> List[int]:
     """
     Extract numbers from the text.
     :param text: Text to extract numbers from
     :return: List of strings containing a single number each
     """
-    return list(re.findall(r'\d+', text))
+    return list(
+        map(
+            lambda number: int(number),
+            re.findall(r'\d+', text)
+        )
+    )
 
 
-def clean_text(text: str) -> str:
+def clear_text(text: str) -> str:
     """
     Prepare text to be parsed by URL regex.
     By now, the regex doesn't parse URLs 100% correctly, so they may end up having redundant characters.
@@ -87,7 +92,7 @@ def clean_text(text: str) -> str:
         1. Adjust the regex to match URLs already formatted by a browser
         2. Join replace() calls below into a regex
     :param text: Text to remove characters from
-    :return: Cleaned text
+    :return: Cleared text
     """
     chars_to_remove = [r'\n', '[', ']', '<', '>', '\\']
     for char in chars_to_remove:
