@@ -52,13 +52,17 @@ def filter_pdf_document_urls(urls: Set[str]) -> Set[str]:
     return set([url for url in urls if url.endswith(".pdf")])
 
 
-def filter_mailing_list_urls(urls: Set[str]) -> Set[str]:
+def filter_mailing_list_urls(urls: Set[str], mailinglist_keys=None) -> Set[str]:
     """
     Filter URLs leading to mailing lists. This is a very rough implementation and should definitely be improved.
     :param urls: List of URLs to filter mailing lists from
+    :param mailinglist_keys: If the URL is a mailing list, any entry from this list should be present in the URL.
+    Otherwise, it searches for the word "mail" only
     :return: List of mailing list URLs
     """
-    return set([url for url in urls if "mail" in url])
+    if not mailinglist_keys:
+        mailinglist_keys = ["mail"]
+    return set([url for url in urls if any(key in url for key in mailinglist_keys)])
 
 
 def extract_and_save_urls_from_directory(input_directory: str, output_directory: str) -> None:
