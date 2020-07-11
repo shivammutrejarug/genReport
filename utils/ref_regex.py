@@ -18,11 +18,13 @@ revision_matcher = re.compile(REVISION_REGEX)
 number_matcher = re.compile(NUMBER_REGEX)
 
 
-def extract_urls(text: str, filter_revisions=True) -> Set[str]:
+def extract_urls(text: str, project: str, filter_revisions=True, filter_issues=True) -> Set[str]:
     """
     Extract unique URLs from the text. If filter_revisions set to True, all URLs belonging to SVN revisions are ignored.
     :param text: Text to extract URLs from
+    :param project: Project name to filter URLs to issues
     :param filter_revisions: Whether to ignore SVN revision URLs
+    :param filter_issues: Whether to filter other issues links
     :return: Set of extracted URLs
     """
 
@@ -38,6 +40,13 @@ def extract_urls(text: str, filter_revisions=True) -> Set[str]:
         urls = set(
             filter(
                 lambda url: not url.startswith("https://svn.apache.org"),
+                urls
+            )
+        )
+    if filter_issues:
+        urls = set(
+            filter(
+                lambda url: not extract_issues(url, project),
                 urls
             )
         )
