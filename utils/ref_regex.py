@@ -10,7 +10,7 @@ URL_REGEX = r"(?:(?:(?:https?|ftp):)?\/\/)(?:\S+(?::\S*)?@)?(?:(?!(?:10|127)" \
             r"(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))" \
             r"|(?:(?:[a-z0-9\u00a1-\uffff][a-z0-9\u00a1-\uffff_-]{0,62})?[a-z0-9\u00a1-\uffff]\.)" \
             r"+(?:[a-z\u00a1-\uffff]{2,}\.?))(?::\d{2,5})?(?:[/?#]\S*)?"
-REVISION_REGEX = r"(?:r|[Rr]ev. |[Rr]evision |[Cc]ommit )[0-9]+"
+REVISION_REGEX = r"(?:r|[Rr]ev. |[Rr]evision |[Cc]ommit )([0-9]+)"
 NUMBER_REGEX = r"d+"
 
 url_matcher = re.compile(URL_REGEX)
@@ -55,23 +55,13 @@ def extract_issues(text: str, project_name: str) -> List[str]:
     return list(issue_matcher.findall(text))
 
 
-def extract_revisions(text: str, uniform: bool = False) -> List[str]:
+def extract_revisions(text: str) -> List[str]:
     """
-    Extract all revisions mentioned in the text.
-    If "uniform" is set to True, then all revisions are converted to the form "rXXXXX".
-    :param text: Text to extract revisions from
-    :param uniform: Whether to convert revisions to the form "rXXXXX"
-    :return: Extracted revisions
+    Extract all revision IDs mentioned in the text.
+    :param text: Text to extract revisions IDs from
+    :return: List containing extracted revision IDs
     """
-    revisions = list(revision_matcher.findall(text))
-    if uniform:
-        revisions = list(
-            map(
-                lambda revision: "r{}".format(extract_numbers(revision)[0]),
-                revisions
-            )
-        )
-    return revisions
+    return revision_matcher.findall(text)
 
 
 def extract_numbers(text: str) -> List[str]:

@@ -71,7 +71,7 @@ def collect_issues_summary(project: str) -> List[Tuple[str, int, Set[str], Set[s
             for comment in data["comments"]:
                 comment_body = comment["body"]
                 comment_urls = set(utils.extract_urls(comment_body, filter_revisions=True))
-                comment_revisions = utils.extract_revisions(comment_body, uniform=True)
+                comment_revisions = utils.extract_revisions(comment_body)
 
                 comment_mailing_lists = utils.filter_mailing_list_urls(comment_urls)
                 comment_urls = comment_urls.difference(comment_mailing_lists)
@@ -211,10 +211,10 @@ def make_plots(project: str, statistics: List[Tuple[int, int, int, int, int, int
         make_plot(project, statistics, blocks, t[0], t[1])
 
 
-project = "PDFBOX"
-parser = JiraParser(project)
-issues = parser.fetch_issues(save=True)
-# parser.fetch_comments()
+projects = ["DERBY", "CASSANDRA"]
+for project in projects:
+    parser = JiraParser(project)
+    issues = parser.fetch_issues(save=True)
 # parser.parse_issues(issues)
 
 # issues_summary = collect_issues_summary(project)
