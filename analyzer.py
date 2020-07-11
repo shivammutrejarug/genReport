@@ -216,7 +216,8 @@ def generate_statistics(project: str):
     return statistics
 
 
-def make_plot(project: str, statistics: List[Tuple[int, int, int, int, int, int, int]], blocks: List[int],
+def make_plot(project: str, plots_dir: str,
+              statistics: List[Tuple[int, int, int, int, int, int, int]], blocks: List[int],
               param_idx: int, param_title: str):
     x = blocks
     y = [param[param_idx] for param in statistics]
@@ -224,7 +225,7 @@ def make_plot(project: str, statistics: List[Tuple[int, int, int, int, int, int,
     plt.xlabel("Issue IDs")
     plt.ylabel("Frequency of {}".format(param_title))
     plt.title("Changes in frequency of {} through the evolution of the project {}".format(param_title, project))
-    plt.savefig(os.path.join("Plots", project, param_title + ".png"), bbox_inches='tight')
+    plt.savefig(os.path.join(plots_dir, param_title + ".png"), bbox_inches='tight')
     plt.close()
 
 
@@ -239,8 +240,13 @@ def make_plots(project: str, statistics: List[Tuple[int, int, int, int, int, int
         (6, "Other URLs")
     ]
 
-    plots_dir = "Plots"
+    plots_dir = os.path.join("Projects", project, "Plots")
     shutil.rmtree(plots_dir, ignore_errors=True)
-    os.makedirs(os.path.join(plots_dir, project))
+    os.mkdir(plots_dir)
+
     for t in types:
-        make_plot(project, statistics, blocks, t[0], t[1])
+        make_plot(project, plots_dir, statistics, blocks, t[0], t[1])
+
+
+statistics = generate_statistics("PDFBOX")
+make_plots("PDFBOX", statistics)
