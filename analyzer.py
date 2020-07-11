@@ -207,9 +207,9 @@ def generate_statistics(project: str):
             revisions += len(issue[3])
             mailing_lists += len(issue[4])
             pdf_documents += len(issue[5])
-            other_issues += len(issues[6])
+            other_issues += len(issue[6])
             other_urls += len(issue[2])
-            for i in range(2, 6):
+            for i in range(2, 7):
                 total += len(issue[i])
         statistics.append((block_idx * 100, total, revisions, mailing_lists, pdf_documents, other_issues, other_urls))
         block_idx += 1
