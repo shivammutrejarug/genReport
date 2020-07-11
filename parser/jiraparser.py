@@ -266,7 +266,8 @@ class JiraParser:
 
         # Summary and description
         json_object["summary"] = fields["summary"]
-        json_object["description"] = fields["description"]
+        description = fields["description"]  # It was found that there can be no description.
+        json_object["description"] = description if description else ""
 
         # Attachments
         json_object["attachments"] = [
