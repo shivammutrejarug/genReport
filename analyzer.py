@@ -60,7 +60,7 @@ def collect_issues_summary(project: str) -> List[Tuple[str, int, Set[str], Set[s
         with open(path, 'r') as issue_file:
             data = json.load(issue_file)
             issue_key = str(data["issue_key"])
-            issue_id = int(utils.extract_numbers(issue_key)[0])
+            issue_id = int(issue_key.split('-')[1])
 
             urls = set()
             revisions = set()
