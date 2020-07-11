@@ -166,10 +166,10 @@ def generate_statistics(project: str):
     #TODO better documentation
     """
     issues = []
-    reference_directory = os.path.join("Projects", project, "References")
+    summary_directory = os.path.join("Projects", project, "Summary")
 
-    for filename in os.listdir(reference_directory):
-        path = os.path.join(reference_directory, filename)
+    for filename in os.listdir(summary_directory):
+        path = os.path.join(summary_directory, filename)
         with open(path, 'r') as file:
             data = json.load(file)
             issues.append(
