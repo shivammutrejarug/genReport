@@ -2,11 +2,10 @@ import os
 import traceback
 
 from jira.client import JIRA
-from typing import List
+from typing import List, Optional
 
 import utils
 
-PROJECTS = ["PDFBOX"]
 APACHE_JIRA_SERVER = "https://issues.apache.org/jira/"
 
 
@@ -14,11 +13,31 @@ class JiraParser:
     def __init__(self, jira_project: str):
         self.jira = JIRA(server=APACHE_JIRA_SERVER)
         self.project = jira_project
-        self.fields = "comment,attachment,issuelinks,status,issuetype,summary,description,created,updated,project,creator"
+        self.project_dir = os.path.join("Projects", self.project)
+        self.issues_raw_dir = os.path.join(self.project_dir, "Issues_raw")
+        self.issues_dir = os.path.join(self.project_dir, "Issues")
+        self.fields = "comment," \
+                      "attachment," \
+                      "issuelinks," \
+                      "status," \
+                      "issuetype," \
+                      "summary," \
+                      "description," \
+                      "created," \
+                      "updated," \
+                      "project," \
+                      "creator"
 
-    def fetch_issues(self, block_index: int = 0, save: bool = True) -> List[dict]:
+    def fetch_issues_raw(self, block_index: int = 0, save: bool = True) -> List[dict]:
         """
-        Fetch all issues from the project and store them in the self.issues list
+        Fetch all issues in their raw (unparsed) form from the project
+        and return them as a list of dictionaries (decoded JSON form). Each issue will additionally have a key
+        "remotelinks" which stores a list of remote links found in the issue (remote links cannot be fetched alongside
+        other fields).
+        :param block_index: Issues are fetched in blocks of 100 issues each, so this variable shows which block should
+        the program start with
+        :param save: Whether to persist issues in JSON format
+        :return: List of issues as dictionaries
         """
         issues = []
         block_size = 100
@@ -43,81 +62,184 @@ class JiraParser:
             issues.extend(fetched_issues)
             print("{}: Fetched {} issues".format(self.project, len(issues)))
             if save:
-                first_issue = len(issues) - len(fetched_issues) + 1
-                last_issue = len(issues)
-                self.__save_issues(fetched_issues, first_issue, last_issue)
-        print("{}: Finished fetching{} issues! Totally fetched: {}".format(self.project,
-                                                                           " and saving" if save else "",
-                                                                           len(issues)))
+                self.__save_issues_raw(fetched_issues)
+        print("{}: Finished fetching {} issues! Totally fetched: {}".format(self.project,
+                                                                            " and saving" if save else "",
+                                                                            len(issues)))
         return issues
 
-    def fetch_issue(self, issue_key: str, save: bool = True):
+    def fetch_issue_raw(self, issue_key: str, save: bool = True) -> dict:
+        """
+        Fetch a specific issue by its key and return it as an unparsed dictionary.
+        :param issue_key: Key of the issue to fetch
+        :param save: Whether to persist the issue in JSON format
+        :return: Issue as a dictionary
+        """
         issue = self.jira.issue(issue_key, self.fields).raw
         if save:
-            self.__save_issues([issue])
+            self.__save_issues_raw([issue])
         return issue
 
-    def __save_issues(self, issues: List[dict], first_issue: int = None, last_issue: int = None) -> None:
-        directory = os.path.join("Projects", self.project, "Issues_raw")
+    def __save_issues_raw(self, issues: List[dict]) -> None:
+        """
+        Persist raw issues in the corresponding folder.
+        :param issues: List of dictionaries describing unparsed issues
+        :return: None
+        """
+        directory = self.issues_raw_dir
         utils.create_dir_if_necessary(directory)
+        print("\t{}: Successfully saved!".format(self.project))
         for issue in issues:
-            filename = issue["key"] + ".json"
+            key = issue["key"]
+            filename = key + ".json"
             path = os.path.join(directory, filename)
             utils.save_as_json(issue, path)
-        if first_issue and last_issue:
-            print("\t{}: Saved issues from {} to {}".format(self.project, first_issue, last_issue))
 
-    def load_issues(self) -> List[dict]:
-        directory = os.path.join("Projects", self.project, "Issues_raw")
+    def load_issues_raw(self) -> List[dict]:
+        """
+        Load unparsed issues stored in the folder "Issues_raw" and return them as a list of dictionaries.
+        :return: List of issues represented as dictionaries
+        """
+        directory = self.issues_raw_dir
         if not os.path.exists(directory):
             return []
         issues = []
         files = os.listdir(directory)
         for filename in files:
             path = os.path.join(directory, filename)
-            issues.append(utils.load_json(path))
+            issue = utils.load_json(path)
+            issues.append(issue)
         return issues
 
-    def parse_issues(self, issues: List[dict]):
+    def load_issue_raw(self, issue_key: str) -> Optional[dict]:
         """
-        For each issue, create a JSON file containing necessary information:
+        Load a raw issue with the specified issue key. If it is not found in the "Issues_raw" directory,
+        then None is returned.
+        :param issue_key: Key of the issue to load from the "Issues_raw" directory
+        :return: Loaded issue represented as a dictionary or None
+        """
+        path = os.path.join(self.issues_raw_dir, issue_key + ".json")
+        if not os.path.isfile(path):
+            return None
+        return utils.load_json(path)
+
+    def parse_issues(self, issues_raw: List[dict] = None) -> List[dict]:
+        """
+        For each raw issue, create a JSON file containing necessary information:
         1. Issue key
-        2. Date of its creation
-        3. Date of its update
-        4. List of comments related to the issue:
-            4.1. Author of the comment
-            4.2. Date of posting the comment
-            4.3. Date of updating the comment
-            4.4. Body of the comment
-        All the data is stored in a file "Projects/<project_name>/Issues/<issue_key>.json"
+        2. Project information
+            2.1 Project key
+            2.2 Project name
+        3. Author
+        4. Date of creation
+        5. Date of update
+        6. Current status
+        7. Summary
+        8. Description
+        9. List of attachments
+            9.1 File name
+            9.2 URL to attachment
+        10. List of issue links
+            10.1 Type of link
+            10.2 Issue key
+        11. List of remote links
+            11.1 Title of link
+            11.2 URL
+        12. List of comments
+            12.1 Author
+            12.2 Date of creation
+            12.3 Date of update
+            12.4 Comment body
+
+        The parsed data for each file is stored in "Projects/<project_name>/Issues/<issue_key>.json
+        :param issues_raw: List of dictionaries representing raw issues. If none is specified, then they are
+        loaded from the cache
+        :return: List of dictionaries of parsed issues
         """
         count = 0
-        directory = os.path.join("Projects", self.project, "Issues")
-        utils.create_dir_if_necessary(directory)
-        for count, issue in enumerate(issues, start=1):
+        issues_dir = self.issues_dir
+        utils.create_dir_if_necessary(issues_dir)
+
+        if not issues_raw:
+            issues_raw = self.load_issues_raw()
+
+        issues = []
+        for count, issue in enumerate(issues_raw, start=1):
             filename = issue["key"] + ".json"
-            path = os.path.join(directory, filename)
+            path = os.path.join(issues_dir, filename)
             json_object = self.__prepare_json_object(issue)
             utils.save_as_json(json_object, path)
+            issues.append(json_object)
 
             if count % 100 == 0:
-                print("{}: Saved {} issues and their comments".format(self.project, count))
-        print("{}: Finished saving issues! Totally saved: {}".format(self.project, count))
+                print("{}: Parsed {} issues".format(self.project, count))
+        print("{}: Finished parsing issues! Totally parsed: {}".format(self.project, count))
+        return issues
+
+    def parse_issue(self, issue_key: str) -> dict:
+        """
+        Parse a raw issue and store it in "Projects/<project_name>/Issues/<issue_key>.json.
+        If the issue is not cached, then it is fetched first.
+        :param issue_key: Key of the issue to parse
+        :return: Dictionary representing the issue
+        """
+        filename = issue_key + ".json"
+        path_raw = os.path.join(self.issues_raw_dir, filename)
+        if not os.path.isfile(path_raw):
+            issue_raw = self.fetch_issue_raw(issue_key, save=True)
+        else:
+            issue_raw = utils.load_json(path_raw)
+        json_object = self.__prepare_json_object(issue_raw)
+
+        path = os.path.join(self.issues_dir, filename)
+        utils.save_as_json(json_object, path)
+        return json_object
 
     @staticmethod
     def __prepare_json_object(issue: dict) -> dict:
         """
         Prepare a dictionary containing the following data:
         {
-          issue_key: <project name>
-          created: <date & time>
-          updated: <date & time>
-          comments:
-          [
-            author: <author name>
-            created: <date & time>
-            updated: <date & time>
-            body: <content of comment>
+          "issue_key": <issue key>,
+          "project": {
+            "key": <project key>,
+            "name": <project name>,
+          },
+          "author": "author's name",
+          "created": <date & time>,
+          "updated": <date & time>,
+          "status": <current status (Opened, Closed, etc.),
+          "summary": <summary>,
+          "description": <description>,
+          "attachments": [
+            {
+              "filename": <file name>,
+              "content": <url to attachment>
+            },
+            ...
+          ],
+          "issuelinks": [
+            {
+              "type": <type of issue, e.g. "duplicate">,
+              "issue_key": <issue key>
+            },
+            ...
+          ],
+          "remotelinks:" [
+            {
+              "title": <url title>,
+              "url": <url link>
+            },
+            ...
+          ],
+          "comments": [
+            {
+              "author": <author name>,
+              "created": <date & time>,
+              "updated": <date & time>,
+              "body": <content of comment>,
+            },
+            ...
           ]
         }
         :param issue: Issue to retrieve data from
@@ -125,57 +247,63 @@ class JiraParser:
         """
         json_object = dict()
         fields = issue["fields"]
-        creator = fields["creator"]
 
+        # Issue key
         json_object["issue_key"] = issue["key"]
-        json_object["project"] = dict()
-        project = json_object["project"]
-        project["key"] = fields["project"]["key"]
-        project["name"] = fields["project"]["name"]
-        json_object["author"] = creator["name"] if creator else None
+
+        # Project
+        json_object["project"] = {
+            "key": fields["project"]["key"],
+            "name": fields["project"]["name"]
+        }
+
+        # Technical details
+        author = fields["creator"]
+        json_object["author"] = author["name"] if author else None
         json_object["created"] = fields["created"]
         json_object["updated"] = fields["updated"]
         json_object["status"] = fields["status"]["name"]
 
+        # Summary and description
         json_object["summary"] = fields["summary"]
         json_object["description"] = fields["description"]
 
-        json_object["attachments"] = list()
-        attachments = json_object["attachments"]
-        for attachment in fields["attachment"]:
-            attachment_dict = dict()
-            attachment_dict["filename"] = attachment["filename"]
-            attachment_dict["content"] = attachment["content"]
-            attachments.append(attachment_dict)
+        # Attachments
+        json_object["attachments"] = [
+            {
+                "filename": attachment["filename"],
+                "content": attachment["content"]
+            }
+            for attachment in fields["attachment"]
+        ]
 
-        json_object["issuelinks"] = []
-        issue_links = json_object["issuelinks"]
-        for link in fields["issuelinks"]:
-            link_dict = dict()
-            link_dict["type"] = link["type"]["name"]
-            if "outwardIssue" in link:
-                link_dict["issue_key"] = link["outwardIssue"]["key"]
-            elif "inwardIssue" in link:
-                link_dict["issue_key"] = link["inwardIssue"]["key"]
-            issue_links.append(link_dict)
+        # Issue links
+        json_object["issuelinks"] = [
+            {
+                "type": link["type"]["name"],
+                "issue_key": link["inwardIssue"]["key"] if "inwardIssue" in link else link["outwardIssue"]["key"]
+            }
+            for link in fields["issuelinks"]
+        ]
 
-        json_object["remotelinks"] = []
-        remote_links = json_object["remotelinks"]
-        for link in issue["remotelinks"]:
-            link_dict = dict()
-            link_dict["title"] = link["object"]["title"]
-            link_dict["url"] = link["object"]["url"]
-            remote_links.append(link_dict)
+        # Remote links
+        json_object["remotelinks"] = [
+            {
+                "title": link["object"]["title"],
+                "url": link["object"]["url"]
+            }
+            for link in issue["remotelinks"]
+        ]
 
-        json_object["comments"] = []
-        comments = json_object["comments"]
-
-        for comment in fields["comment"]["comments"]:
-            comment_dict = dict()
-            comment_dict["author"] = comment["author"]["name"]
-            comment_dict["created"] = comment["created"]
-            comment_dict["updated"] = comment["updated"]
-            comment_dict["body"] = comment["body"]
-            comments.append(comment_dict)
+        # Comments
+        json_object["comments"] = [
+            {
+                "author": comment["author"]["name"],
+                "created": comment["created"],
+                "updated": comment["updated"],
+                "body": comment["body"]
+            }
+            for comment in fields["comment"]["comments"]
+        ]
 
         return json_object
