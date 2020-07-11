@@ -35,94 +35,126 @@ PROJECTS_WITH_PULL_REQUESTS = [
     "NUTCH"  # Nutch https://issues.apache.org/jira/projects/NUTCH/summary
 ]
 
-args = utils.parse_arguments()
-projects = [args.jira_project] if args.jira_project else PROJECTS
+
+def extract_references(text: str, project: str):
+    urls = utils.extract_urls(text, project)
+    revisions = utils.extract_revisions(text)
+
+    mailing_lists = utils.filter_mailing_list_urls(urls)
+    urls = urls.difference(mailing_lists)
+
+    pdf_documents = utils.filter_pdf_document_urls(urls)
+    urls = urls.difference(pdf_documents)
+
+    other_issues = utils.extract_issues(text, project)
+
+    return urls, revisions, mailing_lists, pdf_documents, other_issues
 
 
-# ALREADY DONE
-# retrieve_and_save_issues(projects)
+def collect_issue_summary(project: str, issue: dict, save=True) -> \
+        Tuple[str, int, Set[str], Set[str], Set[str], Set[str], Set[str]]:
+    """
+
+    :param project: Related project
+    :param issue: Issue represented as a dictionary
+    :param save: Whether to save the statistics on hard drive
+    :return:
+    """
+
+    # FIELD 1: issue key
+    issue_key = str(issue["issue_key"])
+
+    # FIELD 2: issue ID; used to increase the efficiency of sorting the data
+    issue_id = int(issue_key.split('-')[1])
+
+    # Parse Description and Remote Links. Remote links are not different from any other type of URLs,
+    # so we will just append them to the description of the issue in order to avoid code duplication.
+    description_and_remote_links = issue["description"] + " " + " ".join(
+        [remote_link["url"] for remote_link in issue["remotelinks"]]
+    )
+
+    # FIELD 3: unparsed URLs
+    # FIELD 4: revision IDs
+    # FIELD 5: URLs detected as mailing lists
+    # FIELD 6: URLs detected as PDF documents
+    # FIELD 7: Other issues
+    urls, revisions, mailing_lists, pdf_documents, other_issues = \
+        extract_references(description_and_remote_links, project)
+
+    # Parse Comments
+    for comment in issue["comments"]:
+        comment_details = extract_references(comment["body"], project)
+        urls.update(comment_details[0])
+        revisions.update(comment_details[1])
+        mailing_lists.update(comment_details[2])
+        pdf_documents.update(comment_details[3])
+        other_issues.update(comment_details[4])
+
+    for issue in issue["issuelinks"]:
+        other_issues.add(issue["issue_key"])
+
+    summary = (issue_key,
+               issue_id,
+               urls,
+               revisions,
+               mailing_lists,
+               pdf_documents,
+               other_issues)
+
+    if save:
+        __save_references(project, summary)
+    return summary
 
 
-def collect_issues_summary(project: str) -> List[Tuple[str, int, Set[str], Set[str], Set[str], Set[str], Set[str]]]:
+def collect_issues_summary(project: str, save=True) -> List[
+    Tuple[str, int, Set[str], Set[str], Set[str], Set[str], Set[str]]
+]:
     """
     For each Issue inside Projects/<project>/Issues, extract all types of references and return a data type containing
     all the necessary data
     :param project: Project to extract references from
+    :param save: Whether to save extracted references to JSON documents
     :return: List of tuples containing data
-    #TODO explain better what exactly is returned
     """
     directory = os.path.join("Projects", project, "Issues")
+    if not os.path.isdir(directory):
+        print("The folder does not exist. Make sure you fetched and parsed at least one issue.")
+        return []
     issues_dir = os.listdir(directory)
     issues = []
 
     for filename in issues_dir:
         path = os.path.join(directory, filename)
         with open(path, 'r') as issue_file:
-            data = json.load(issue_file)
-            issue_key = str(data["issue_key"])
-            issue_id = int(issue_key.split('-')[1])
-
-            urls = set()
-            revisions = set()
-            mailing_lists = set()
-            pdf_documents = set()
-            other_issues = set()
-
-            for comment in data["comments"]:
-                comment_body = comment["body"]
-                comment_urls = set(utils.extract_urls(comment_body, filter_revisions=True))
-                comment_revisions = utils.extract_revisions(comment_body)
-
-                comment_mailing_lists = utils.filter_mailing_list_urls(comment_urls)
-                comment_urls = comment_urls.difference(comment_mailing_lists)
-
-                comment_pdf_documents = utils.filter_pdf_document_urls(comment_urls)
-                comment_urls = comment_urls.difference(comment_pdf_documents)
-
-                urls.update(comment_urls)
-                revisions.update(comment_revisions)
-                mailing_lists.update(comment_mailing_lists)
-                pdf_documents.update(comment_pdf_documents)
-
-            for issue in data["issue_links"]:
-                other_issues.add(issue["issue_key"])
-
-            remote_links = [remote_link["url"] for remote_link in data["remote_links"]]
-            urls.update(remote_links)
-            issues.append(
-                (issue_key, issue_id, urls, revisions, mailing_lists, pdf_documents, other_issues)
-            )
+            issue = json.load(issue_file)
+            summary = collect_issue_summary(project, issue, save)
+            issues.append(summary)
     return issues
 
 
-def save_references(project: str,
-                    issues: List[Tuple[str, int, Set[str], Set[str], Set[str], Set[str], Set[str]]]) -> None:
+def __save_references(project: str,
+                      issue_summary: Tuple[str, int, Set[str], Set[str], Set[str], Set[str], Set[str]]) -> None:
     """
-    Save references for each issue in JSON format
+    Save references for an issue in JSON format.
     :param project: Project to write references for
-    :param issues: Data type describing necessary data
+    :param issue_summary: Data type describing necessary data
     :return: None
     """
-    reference_dir = os.path.join("Projects", project, "References")
+    summary_dir = os.path.join("Projects", project, "Summary")
+    if not os.path.isdir(summary_dir):
+        os.mkdir(summary_dir)
 
-    shutil.rmtree(reference_dir, ignore_errors=True)
-    os.mkdir(reference_dir)
-
-    for issue in issues:
-        issue_dict = dict()
-        issue_dict["issue_key"] = issue[0]
-        issue_dict["issue_id"] = issue[1]
-        issue_dict["urls"] = list(issue[2])  # parser.parse_issues(parser.load_issues())
-        # utils.extract_and_save_urls_from_directory(input_directory=os.path.join("Projects", project, "Issues"),
-        #                                            output_directory=os.path.join("Projects", project, "URLs"))
-        # statistics = generate_statistics("PDFBOX")
-        #
-        issue_dict["revisions"] = list(issue[3])
-        issue_dict["mailing_lists"] = list(issue[4])
-        issue_dict["pdf_documents"] = list(issue[5])
-        issue_dict["other_issues"] = list(issue[6])
-        path = os.path.join(reference_dir, issue[0] + ".json")
-        utils.save_as_json(issue_dict, path)
+    issue_dict = {
+        "issue_key": issue_summary[0],
+        "issue_id": issue_summary[1],
+        "urls": list(issue_summary[2]),
+        "revisions": list(issue_summary[3]),
+        "mailing_lists": list(issue_summary[4]),
+        "pdf_documents": list(issue_summary[5]),
+        "other_issues": list(issue_summary[6])
+    }
+    path = os.path.join(summary_dir, issue_summary[0] + ".json")
+    utils.save_as_json(issue_dict, path)
 
 
 def generate_statistics(project: str):
@@ -169,21 +201,23 @@ def generate_statistics(project: str):
         revisions = 0
         mailing_lists = 0
         pdf_documents = 0
+        other_issues = 0
         other_urls = 0
         for issue in block:
             revisions += len(issue[3])
             mailing_lists += len(issue[4])
             pdf_documents += len(issue[5])
+            other_issues += len(issues[6])
             other_urls += len(issue[2])
             for i in range(2, 6):
                 total += len(issue[i])
-        statistics.append((block_idx * 100, total, revisions, mailing_lists, pdf_documents, other_urls))
+        statistics.append((block_idx * 100, total, revisions, mailing_lists, pdf_documents, other_issues, other_urls))
         block_idx += 1
     return statistics
 
 
-def make_plot(project: str, statistics: List[Tuple[int, int, int, int, int, int]], blocks: List[int], param_idx: int,
-              param_title: str):
+def make_plot(project: str, statistics: List[Tuple[int, int, int, int, int, int, int]], blocks: List[int],
+              param_idx: int, param_title: str):
     x = blocks
     y = [param[param_idx] for param in statistics]
     plt.plot(x, y)
@@ -194,14 +228,15 @@ def make_plot(project: str, statistics: List[Tuple[int, int, int, int, int, int]
     plt.close()
 
 
-def make_plots(project: str, statistics: List[Tuple[int, int, int, int, int, int]]):
+def make_plots(project: str, statistics: List[Tuple[int, int, int, int, int, int, int]]):
     blocks = [param[0] for param in statistics]
     types = [
         (1, "Total references"),
         (2, "Revisions"),
         (3, "Mailing Lists"),
         (4, "PDF documents"),
-        (5, "Other URLs")
+        (5, "Other issues"),
+        (6, "Other URLs")
     ]
 
     plots_dir = "Plots"
@@ -209,14 +244,3 @@ def make_plots(project: str, statistics: List[Tuple[int, int, int, int, int, int
     os.makedirs(os.path.join(plots_dir, project))
     for t in types:
         make_plot(project, statistics, blocks, t[0], t[1])
-
-
-projects = ["DERBY", "CASSANDRA"]
-for project in projects:
-    parser = JiraParser(project)
-    issues = parser.fetch_issues(save=True)
-# parser.parse_issues(issues)
-
-# issues_summary = collect_issues_summary(project)
-# save_references(project, issues_summary)
-# generate_statistics(project)
