@@ -27,7 +27,7 @@ def extract_urls(text: str, project: str, filter_revisions=True, filter_issues=T
     :param filter_issues: Whether to filter other issues links
     :return: Set of extracted URLs
     """
-
+    text = clear_text(text)
     urls = set(url_matcher.findall(text))
     urls = set(
         map(
@@ -103,7 +103,7 @@ def clear_text(text: str) -> str:
     :param text: Text to remove characters from
     :return: Cleared text
     """
-    chars_to_remove = [r'\n', '[', ']', '<', '>', '\\']
+    chars_to_remove = [r'\n', '[', ']', '<', '>', '\\', "\""]
     for char in chars_to_remove:
         text = text.replace(char, ' ')
     return text
