@@ -43,21 +43,6 @@ def parse_arguments():
     return arg_parser.parse_args()
 
 
-def extract_references(text: str, project: str):
-    urls = utils.extract_urls(text, project)
-    revisions = utils.extract_revisions(text)
-
-    mailing_lists = utils.filter_mailing_list_urls(urls)
-    urls = urls.difference(mailing_lists)
-
-    pdf_documents = utils.filter_pdf_document_urls(urls)
-    urls = urls.difference(pdf_documents)
-
-    other_issues = utils.extract_issues(text, project)
-
-    return urls, revisions, mailing_lists, pdf_documents, other_issues
-
-
 def collect_issue_summary(project: str, issue: dict, save=True) -> \
         Tuple[str, int, Set[str], Set[str], Set[str], Set[str], Set[str]]:
     """
@@ -86,11 +71,11 @@ def collect_issue_summary(project: str, issue: dict, save=True) -> \
     # FIELD 6: URLs detected as PDF documents
     # FIELD 7: Other issues
     urls, revisions, mailing_lists, pdf_documents, other_issues = \
-        extract_references(description_and_remote_links, project)
+        utils.extract_references(description_and_remote_links, project)
 
     # Parse Comments
     for comment in issue["comments"]:
-        comment_details = extract_references(comment["body"], project)
+        comment_details = utils.extract_references(comment["body"], project)
         urls.update(comment_details[0])
         revisions.update(comment_details[1])
         mailing_lists.update(comment_details[2])
@@ -164,13 +149,19 @@ def __save_references(project: str,
     utils.save_as_json(issue_dict, path)
 
 
-def generate_statistics(project: str):
+def generate_statistics(project: str) -> List[Tuple[int, int, int, int, int, int, int]]:
     """
     Based on the references for each issue, generate the frequency of each type of references and split the data
     into blocks of 100 issues for a broader analysis of the data.
     :param project: Project to parse references from
-    :return: Generated statistics
-    #TODO better documentation
+    :return: List of tuples representing generated statistics with the following fields:
+        1. Current block description (e.g. 100 means block 1-100, 400 means block 301-400)
+        2. Total number of references in block
+        3. Number of revisions
+        4. Number of mailing lists
+        5. Number of PDF documents URLs
+        6. Number of other issues
+        7. Number of uncategorized URLs
     """
     issues = []
     summary_directory = os.path.join("Projects", project, "Summary")
@@ -190,6 +181,8 @@ def generate_statistics(project: str):
             )
     issues = sorted(issues, key=lambda x: x[1])
 
+    # Since the number of references in each issue can be very little, it makes sense to combine them in blocks of 100
+    # in order to have a better overview of the development of the project.
     blocks = []
     block_size = 100
     block_idx = 0
@@ -201,6 +194,7 @@ def generate_statistics(project: str):
         blocks.append(block)
         block_idx += 1
 
+    # Now it's time to collect statistics
     block_idx = 1
     statistics = []
     for block in blocks:

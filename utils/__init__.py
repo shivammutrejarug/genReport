@@ -1,6 +1,7 @@
 import errno
 import json
 import os
+from typing import Tuple
 from .ref_regex import *
 
 
@@ -32,6 +33,31 @@ def construct_svn_revision_url(revision: str) -> str:
     """
     revision_id = extract_numbers(revision)[0]
     return "https://svn.apache.org/r{}".format(revision_id)
+
+
+def extract_references(text: str, project: str) -> Tuple[Set[str], Set[str], Set[str], Set[str], Set[str]]:
+    """
+    Extract different types of references from the specified text.
+    :param text: Text to extract references from
+    :param project: Name of the project; helpful for some references extractors
+    :return: Tuple of sets containing data in the following format:
+        1. URLs without mailing lists and PDF documents URLs
+        2. Revisions
+        3. Mailing lists
+        4. PDF documents URLs
+    """
+    urls = extract_urls(text, project)
+    revisions = extract_revisions(text)
+
+    mailing_lists = filter_mailing_list_urls(urls)
+    urls = urls.difference(mailing_lists)
+
+    pdf_documents = filter_pdf_document_urls(urls)
+    urls = urls.difference(pdf_documents)
+
+    other_issues = extract_issues(text, project)
+
+    return urls, revisions, mailing_lists, pdf_documents, other_issues
 
 
 def filter_pdf_document_urls(urls: Set[str]) -> Set[str]:
