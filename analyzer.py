@@ -1,3 +1,4 @@
+import argparse
 import json
 from parser import JiraParser
 import matplotlib.pyplot as plt
@@ -34,6 +35,12 @@ PROJECTS_WITH_PULL_REQUESTS = [
     "TAJO",  # Tajo https://issues.apache.org/jira/projects/TAJO/summary
     "NUTCH"  # Nutch https://issues.apache.org/jira/projects/NUTCH/summary
 ]
+
+
+def parse_arguments():
+    arg_parser = argparse.ArgumentParser()
+    arg_parser.add_argument("-j", "--jira-project", help="Target Jira project")
+    return arg_parser.parse_args()
 
 
 def extract_references(text: str, project: str):
@@ -248,5 +255,15 @@ def make_plots(project: str, statistics: List[Tuple[int, int, int, int, int, int
         make_plot(project, plots_dir, statistics, blocks, t[0], t[1])
 
 
-statistics = generate_statistics("PDFBOX")
-make_plots("PDFBOX", statistics)
+if __name__ == "__main__":
+    args = parse_arguments()
+    if args.jira_project:
+        project = args.jira_project
+    else:
+        project = "PDFBOX"
+    parser = JiraParser(project)
+    parser.fetch_issues_raw()
+    parser.parse_issues()
+    summary = collect_issues_summary(project)
+    statistics = generate_statistics(project)
+    make_plots(project, statistics)
