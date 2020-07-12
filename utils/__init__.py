@@ -1,4 +1,3 @@
-import argparse
 import errno
 import json
 import os
@@ -23,12 +22,6 @@ def create_dir_if_necessary(dir_path: str) -> None:
         except OSError as e:
             if e.errno != errno.EEXIST:
                 raise
-
-
-def parse_arguments():
-    arg_parser = argparse.ArgumentParser()
-    arg_parser.add_argument("-j", "--jira-project", help="Target Jira project")
-    return arg_parser.parse_args()
 
 
 def construct_svn_revision_url(revision: str) -> str:
