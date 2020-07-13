@@ -195,6 +195,15 @@ class JiraParser:
         utils.save_as_json(json_object, path)
         return json_object
 
+    def load_issue(self, issue_key: str) -> dict:
+        filename = issue_key + ".json"
+        path = os.path.join(self.issues_dir, filename)
+        if not os.path.isfile(path):
+            issue = self.parse_issue(issue_key)
+        else:
+            issue = utils.load_json(path)
+        return issue
+
     @staticmethod
     def __prepare_json_object(issue: dict) -> dict:
         """
