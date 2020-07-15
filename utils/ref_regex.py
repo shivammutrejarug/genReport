@@ -10,11 +10,13 @@ URL_REGEX = r"(?:(?:(?:https?|ftp):)?\/\/)(?:\S+(?::\S*)?@)?(?:(?!(?:10|127)" \
             r"(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))" \
             r"|(?:(?:[a-z0-9\u00a1-\uffff][a-z0-9\u00a1-\uffff_-]{0,62})?[a-z0-9\u00a1-\uffff]\.)" \
             r"+(?:[a-z\u00a1-\uffff]{2,}\.?))(?::\d{2,5})?(?:[/?#]\S*)?"
-REVISION_REGEX = r"(?:r|[Rr]ev. |[Rr]evision |[Cc]ommit )([0-9]+)"
+SVN_REVISION_REGEX = r"(?:r|[Rr]ev. |[Rr]evision |[Cc]ommit )([0-9]+)"
+GIT_COMMIT_REGEX = r"[0-9a-f]{40}"
 NUMBER_REGEX = r"d+"
 
 url_matcher = re.compile(URL_REGEX)
-revision_matcher = re.compile(REVISION_REGEX)
+svn_revision_matcher = re.compile(SVN_REVISION_REGEX)
+git_commit_matcher = re.compile(GIT_COMMIT_REGEX)
 number_matcher = re.compile(NUMBER_REGEX)
 
 
@@ -70,7 +72,7 @@ def extract_revisions(text: str) -> Set[str]:
     :param text: Text to extract revisions IDs from
     :return: List containing extracted revision IDs
     """
-    return set(revision_matcher.findall(text))
+    return set(svn_revision_matcher.findall(text) + git_commit_matcher.findall(text))
 
 
 def extract_numbers(text: str) -> List[int]:
