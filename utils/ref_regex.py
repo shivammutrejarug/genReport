@@ -20,16 +20,18 @@ git_commit_matcher = re.compile(GIT_COMMIT_REGEX)
 number_matcher = re.compile(NUMBER_REGEX)
 
 
-def extract_urls(text: str, project: str, filter_revisions=True, filter_issues=True) -> Set[str]:
+def extract_urls(text: str, project: str, filter_svn_revisions=True, filter_issues=True) -> Set[str]:
     """
     Extract unique URLs from the text. If filter_revisions set to True, all URLs belonging to SVN revisions are ignored.
     :param text: Text to extract URLs from
     :param project: Project name to filter URLs to issues
-    :param filter_revisions: Whether to ignore SVN revision URLs
+    :param filter_svn_revisions: Whether to ignore SVN revision URLs
     :param filter_issues: Whether to filter other issues links
     :return: Set of extracted URLs
     """
     text = clear_text(text)
+    # Some characters still remain in the URL after extraction, although they are not expected to be there, so we
+    # remove them beforehand.
     urls = set(url_matcher.findall(text))
     urls = set(
         map(
@@ -38,7 +40,7 @@ def extract_urls(text: str, project: str, filter_revisions=True, filter_issues=T
             urls
         )
     )
-    if filter_revisions:
+    if filter_svn_revisions:
         urls = set(
             filter(
                 lambda url: not url.startswith("https://svn.apache.org"),
@@ -99,9 +101,6 @@ def clear_text(text: str) -> str:
     Developers usually just copy-paste URLs from a browser's address bar, and browsers, for their part, have those URLs
     already formatted to exclude those characters (e.g. '[' -> "%5B", ')' -> "%29")
 
-    TODO: Either:
-        1. Adjust the regex to match URLs already formatted by a browser
-        2. Join replace() calls below into a regex
     :param text: Text to remove characters from
     :return: Cleared text
     """
