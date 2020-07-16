@@ -50,7 +50,10 @@ class ReportGenerator:
         self.issue_key = issue_key
         self.github_repository = github_repository
         self.bots = bots
-        self.exclude = exclude
+        if not exclude:
+            self.exclude = []
+        else:
+            self.exclude = exclude
 
         self.data = self.__load_issue()
         self.commits = None
@@ -170,10 +173,13 @@ class ReportGenerator:
                         doc.append("No related commits")
                     else:
                         with doc.create(Enumerate()) as enum:
-                            for commit in commits:
-                                enum.add_item("Commit {} by {} ({}): {}".format(
-                                    commit["short_sha"], commit["author"], commit["date"], commit["message"]
-                                ))
+                            for commit in commits[issue["issue_key"]]:
+                                enum.add_item(NoEscape("Commit {} by {} ({}): {}".format(
+                                    bold(commit["short_sha"]),
+                                    bold(escape_latex(commit["author"])),
+                                    escape_latex(commit["date"]),
+                                    escape_latex(commit["message"])
+                                )))
             if "comments" not in self.exclude:
                 with doc.create(Section("Comments")):
                     self.__add_comments(issue)
