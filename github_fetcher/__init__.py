@@ -13,7 +13,7 @@ class GitHubFetcher:
         self.repo = self.github.get_repo(repo_name)
         self.savedir = os.path.join("Projects", self.project, "Commits")
 
-    def get_commits(self, issue_key: str):
+    def get_commits(self, issue_key: str = None):
         path = os.path.join(self.savedir, issue_key + ".json")
         if not os.path.isfile(path):
             path = os.path.join(self.savedir, "all.json")
@@ -23,13 +23,14 @@ class GitHubFetcher:
                 commits = utils.load_json(path)
         else:
             commits = utils.load_json(path)
-        prefix = issue_key + ':'
-        commits = list(
-            filter(
-                lambda commit: commit["message"].startswith(prefix),
-                commits
+        if issue_key:
+            prefix = issue_key + ':'
+            commits = list(
+                filter(
+                    lambda commit: commit["message"].startswith(prefix),
+                    commits
+                )
             )
-        )
         return commits
 
     def fetch_commits(self, issue_key: str = None, save: bool = True):
