@@ -2,7 +2,9 @@ from argparse import ArgumentParser
 from pylatex import Document, Package, Command, Enumerate, Tabular
 from pylatex.section import Chapter, Section
 from pylatex.utils import escape_latex, NoEscape, bold
+import os
 import utils
+from github_fetcher import GitHubFetcher
 from parser import JiraParser
 from typing import Tuple, List
 
@@ -42,15 +44,18 @@ def __define_issues(issues_arg: str) -> List[str]:
 
 
 class ReportGenerator:
-    def __init__(self, project: str, issue: str, github_repository: str = None, bots: List[str] = None,
+    def __init__(self, project: str, issue_key: str, github_repository: str = None, bots: List[str] = None,
                  exclude: List[str] = None):
         self.project = project
-        self.issue = issue
+        self.issue_key = issue_key
         self.github_repository = github_repository
         self.bots = bots
         self.exclude = exclude
 
         self.data = self.__load_issue()
+        self.commits = None
+        if self.github_repository:
+            self.commits = self.__load_commits()
 
         self.doc = Document(documentclass="report")
         self.__setup_packages()
@@ -61,39 +66,9 @@ class ReportGenerator:
         description = escape_latex(description)
         return NoEscape(r"\href{" + url + "}{" + description + "}")
 
-    def __setup_packages(self):
-        packages = self.doc.packages
-        packages.append(Package("a4wide"))
-        packages.append(Package("listings"))
-        packages.append(Package("xcolor"))
-        packages.append(Package("courier"))
-        packages.append(Package("tabularx"))
-        packages.append(Package("hyperref"))
-        packages.append(Package("spverbatim"))
-
-    def __setup_preamble(self):
-        preamble = self.doc.preamble
-        issue = self.data[0]
-        preamble.append(NoEscape(r"\UseRawInputEncoding"))
-        preamble.append(Command("title", issue["issue_key"]))
-        preamble.append(Command("author", issue["author"]))
-        preamble.append(Command("date", issue["created"].split("T")[0]))
-        preamble.append(NoEscape(r"\lstset{tabsize = 4,"
-                                 r"showstringspaces = false,"
-                                 r"numbers = left,"
-                                 r"commentstyle = \color{darkgreen} \ttfamily,"
-                                 r"keywordstyle = \color{blue} \ttfamily,"
-                                 r"stringstyle = \color{red} \ttfamily,"
-                                 r"rulecolor = \color{black} \ttfamily,"
-                                 r"basicstyle = \footnotesize \ttfamily,"
-                                 r"frame = single,"
-                                 r"breaklines = true,"
-                                 r"numberstyle = \tiny}"))
-        preamble.append(NoEscape(r"\definecolor{darkgreen}{rgb}{0,0.6,0}"))
-
     def __load_issue(self) -> Tuple[dict, List[dict]]:
         parser = JiraParser(self.project)
-        issue = parser.load_issue(self.issue)
+        issue = parser.load_issue(self.issue_key)
         issue["comments"] = list(
             filter(
                 lambda comment: not comment["author"] in self.bots,
@@ -117,6 +92,46 @@ class ReportGenerator:
 
         return issue, connected_issues
 
+    def __load_commits(self):
+        issue, connected_issues = self.data
+        issue_keys = [issue["issue_key"]] + [connected_issue["issue_key"] for connected_issue in connected_issues]
+
+        fetcher = GitHubFetcher(self.project, self.github_repository.replace("https://github.com/", ""))
+        commits = dict()
+        for key in issue_keys:
+            commits[key] = fetcher.get_commits(key)
+        return commits
+
+    def __setup_packages(self):
+        packages = self.doc.packages
+        packages.append(Package("a4wide"))
+        packages.append(Package("listings"))
+        packages.append(Package("xcolor"))
+        packages.append(Package("courier"))
+        packages.append(Package("tabularx"))
+        packages.append(Package("hyperref"))
+        packages.append(Package("spverbatim"))
+
+    def __setup_preamble(self):
+        preamble = self.doc.preamble
+        issue = self.data[0]
+        preamble.append(NoEscape(r"\UseRawInputEncoding"))
+        preamble.append(Command("title", issue["issue_key"]))
+        preamble.append(Command("author", issue["author"]))
+        preamble.append(Command("date", issue["created"].split("T")[0]))
+        preamble.append(Command("lstset", NoEscape("tabsize = 4,"
+                                                   r"showstringspaces = false,"
+                                                   r"numbers = left,"
+                                                   r"commentstyle = \color{darkgreen} \ttfamily,"
+                                                   r"keywordstyle = \color{blue} \ttfamily,"
+                                                   r"stringstyle = \color{red} \ttfamily,"
+                                                   r"rulecolor = \color{black} \ttfamily,"
+                                                   r"basicstyle = \footnotesize \ttfamily,"
+                                                   r"frame = single,"
+                                                   r"breaklines = true,"
+                                                   r"numberstyle = \tiny")))
+        preamble.append(NoEscape(r"\definecolor{darkgreen}{rgb}{0,0.6,0}"))
+
     def __add_comments(self, issue):
         doc = self.doc
         with doc.create(Enumerate()) as enum:
@@ -128,7 +143,6 @@ class ReportGenerator:
         doc = self.doc
         chapter_title = ("Root issue " if root_issue else "Connected issue ") + issue["issue_key"]
         with doc.create(Chapter(chapter_title)):
-
             with doc.create(Section("Summary")):
                 summary = utils.escape_with_listings(issue["summary"])
                 doc.append(summary)
@@ -143,7 +157,8 @@ class ReportGenerator:
                         enum.add_item(self.__hyperlink(attachment["content"], attachment["filename"]))
 
             with doc.create(Section("Commits")):
-                print()
+                with doc.create(Enumerate()) as enum:
+                    print()
 
             with doc.create(Section("Comments")):
                 self.__add_comments(issue)
