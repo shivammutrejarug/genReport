@@ -252,12 +252,11 @@ def make_plots(project: str, statistics: List[Tuple[int, int, int, int, int, int
 if __name__ == "__main__":
     args = parse_arguments()
     if args.jira_project:
-        project = args.jira_project
-    else:
-        project = "PDFBOX"
-    parser = JiraParser(project)
-    parser.fetch_issues_raw()
-    parser.parse_issues()
-    summary = collect_issues_summary(project)
-    statistics = generate_statistics(project)
-    make_plots(project, statistics)
+        PROJECTS = [args.jira_project]
+    for project in PROJECTS:
+        parser = JiraParser(project)
+        parser.fetch_issues_raw()
+        parser.parse_issues()
+        summary = collect_issues_summary(project)
+        statistics = generate_statistics(project)
+        make_plots(project, statistics)
