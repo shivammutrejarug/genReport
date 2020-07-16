@@ -92,3 +92,21 @@ def atlassian_code_format_to_listing(string: str) -> str:
         string = string.replace(r"{noformat}", r"\end{lstlisting}", 1)
 
     return string
+
+
+def extract_code_listings(string: str) -> Tuple[str, List[Tuple[str, str]]]:
+    listings = []
+    listing_index = 1
+    pattern = re.compile(r"({(code:(.*?))|(code)})(.*?){code}")
+
+    while True:
+        listing = pattern.search(string)
+        if not listing:
+            break
+        content = listing.group(0)
+        key = "<<!PDFGEN{}!>>".format(listing_index)
+        listing_index += 1
+        listings.append((key, content))
+        string = string.replace(content, key)
+    return string, listings
+
