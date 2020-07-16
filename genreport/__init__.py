@@ -143,25 +143,40 @@ class ReportGenerator:
         doc = self.doc
         chapter_title = ("Root issue " if root_issue else "Connected issue ") + issue["issue_key"]
         with doc.create(Chapter(chapter_title)):
-            with doc.create(Section("Summary")):
-                summary = utils.escape_with_listings(issue["summary"])
-                doc.append(summary)
+            if "summary" not in self.exclude:
+                with doc.create(Section("Summary")):
+                    summary = utils.escape_with_listings(issue["summary"])
+                    doc.append(summary)
 
-            with doc.create(Section("Description")):
-                description = utils.escape_with_listings(issue["summary"])
-                doc.append(description)
+            if "description" not in self.exclude:
+                with doc.create(Section("Description")):
+                    description = utils.escape_with_listings(issue["summary"])
+                    doc.append(description)
 
-            with doc.create(Section("Attachments")):
-                with doc.create(Enumerate()) as enum:
-                    for attachment in issue["attachments"]:
-                        enum.add_item(self.__hyperlink(attachment["content"], attachment["filename"]))
+            if "attachments" not in self.exclude:
+                with doc.create(Section("Attachments")):
+                    with doc.create(Enumerate()) as enum:
+                        attachments = issue["attachments"]
+                        if not attachments:
+                            doc.append("No attachments")
+                        else:
+                            for attachment in issue["attachments"]:
+                                enum.add_item(self.__hyperlink(attachment["content"], attachment["filename"]))
 
-            with doc.create(Section("Commits")):
-                with doc.create(Enumerate()) as enum:
-                    print()
-
-            with doc.create(Section("Comments")):
-                self.__add_comments(issue)
+            if "commits" not in self.exclude:
+                with doc.create(Section("Commits")):
+                    commits = self.commits
+                    if not commits:
+                        doc.append("No related commits")
+                    else:
+                        with doc.create(Enumerate()) as enum:
+                            for commit in commits:
+                                enum.add_item("Commit {} by {} ({}): {}".format(
+                                    commit["short_sha"], commit["author"], commit["date"], commit["message"]
+                                ))
+            if "comments" not in self.exclude:
+                with doc.create(Section("Comments")):
+                    self.__add_comments(issue)
 
     def generate_report(self):
         doc = self.doc
@@ -171,8 +186,9 @@ class ReportGenerator:
 
         self.__describe_issue(issue, root_issue=True)
 
-        for issue in connected_issues:
-            self.__describe_issue(issue)
+        if "other_issues" not in self.exclude:
+            for issue in connected_issues:
+                self.__describe_issue(issue)
 
         doc.generate_pdf(filename, clean_tex=True)
         print("Report for {} is successfully created".format(filename))
