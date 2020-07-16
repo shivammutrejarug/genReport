@@ -1,11 +1,10 @@
 from argparse import ArgumentParser
-from pylatex import Document, Section, Subsection, Package, Command, Enumerate, Tabular
+from pylatex import Document, Package, Command, Enumerate, Tabular
+from pylatex.section import Chapter, Section
 from pylatex.utils import escape_latex, NoEscape, bold
 import utils
-import os
 from parser import JiraParser
 from typing import Tuple, List
-import re
 
 
 def __parse_arguments() -> ArgumentParser:
@@ -13,11 +12,33 @@ def __parse_arguments() -> ArgumentParser:
     arg_parser.add_argument("-g", "--github", help="Target Jira project's GitHub repository")
     arg_parser.add_argument("-b", "--bots", help="List of bots to exclude from report, separated by comma")
     arg_parser.add_argument("-i", "--issues", help="Issues to generate reports for, separated by comma and/or"
-                                                   "defined as ranges. For example, \"124,136-152,174\"")
+                                                   "defined as ranges. For example, \"124,136-152,174\"", required=True)
     arg_parser.add_argument("-e", "--exclude", help="Sections to skip when generating report, separated by comma."
-                                                    "Sections are: [summary, description, attachments,"
+                                                    "Sections are: [summary, description, attachments, commits"
                                                     "comments, other_issues]")
     return arg_parser
+
+
+def __define_issues(issues_arg: str) -> List[str]:
+    issues = []
+    for issues_entry in issues_arg.split(','):
+        if issues_entry.isdecimal():  # If it is a single issue
+            issues.append(issues_entry)
+        else:
+            issues_range = issues_entry.split('-')
+            if len(issues_range) != 2 or not issues_range[0].isdecimal() or not issues_range[1].isdecimal():
+                print("Invalid issues list format")
+                return []
+
+            first_issue = int(issues_range[0])
+            last_issue = int(issues_range[1])
+            if last_issue < first_issue:
+                print("The range should be from smaller to bigger")
+                return []
+
+            for issue in range(first_issue, last_issue + 1):
+                issues.append(issue)
+    return issues
 
 
 class ReportGenerator:
@@ -31,9 +52,14 @@ class ReportGenerator:
 
         self.data = self.__load_issue()
 
-        self.doc = Document(document_options="article")
+        self.doc = Document(documentclass="report")
         self.__setup_packages()
         self.__setup_preamble()
+
+    @staticmethod
+    def __hyperlink(url, description):
+        description = escape_latex(description)
+        return NoEscape(r"\href{" + url + "}{" + description + "}")
 
     def __setup_packages(self):
         packages = self.doc.packages
@@ -91,55 +117,6 @@ class ReportGenerator:
 
         return issue, connected_issues
 
-    @staticmethod
-    def __hyperlink(url, description):
-        description = escape_latex(description)
-        return NoEscape(r"\href{" + url + "}{" + description + "}")
-
-    @staticmethod
-    def define_issues(issues_arg: str) -> List[str]:
-        issues = []
-        for issues_entry in issues_arg.split(','):
-            if issues_entry.isdecimal():  # If it is a single issue
-                issues.append(issues_entry)
-            else:
-                issues_range = issues_entry.split('-')
-                if len(issues_range) != 2 or not issues_range[0].isdecimal() or not issues_range[1].isdecimal():
-                    print("Invalid issues list format")
-                    return []
-
-                first_issue = int(issues_range[0])
-                last_issue = int(issues_range[1])
-                if last_issue < first_issue:
-                    print("The range should be from smaller to bigger")
-                    return []
-
-                for issue in range(first_issue, last_issue + 1):
-                    issues.append(issue)
-        return issues
-
-    def __describe_connected_issue(self, issue: dict, index: int) -> None:
-        doc = self.doc
-        with doc.create(Section("Connected issue {}: {}".format(index, issue["issue_key"]))):
-            with doc.create(Subsection("Issue key")):
-                doc.append(issue["issue_key"])
-
-            with doc.create(Subsection("Summary")):
-                summary = utils.escape_with_listings(issue["summary"])
-                doc.append(summary)
-
-            with doc.create(Subsection("Description")):
-                description = utils.escape_with_listings(issue["summary"])
-                doc.append(description)
-
-            with doc.create(Subsection("Attachments")):
-                with doc.create(Enumerate()) as enum:
-                    for attachment in issue["attachments"]:
-                        enum.add_item(self.__hyperlink(attachment["content"], attachment["filename"]))
-
-            with doc.create(Subsection("Comments")):
-                self.__add_comments(issue)
-
     def __add_comments(self, issue):
         doc = self.doc
         with doc.create(Enumerate()) as enum:
@@ -147,30 +124,40 @@ class ReportGenerator:
                 comment_body = utils.escape_with_listings(comment["body"])
                 enum.add_item(bold(comment["author"] + ": ") + comment_body)
 
+    def __describe_issue(self, issue, root_issue: bool = False):
+        doc = self.doc
+        chapter_title = ("Root issue " if root_issue else "Connected issue ") + issue["issue_key"]
+        with doc.create(Chapter(chapter_title)):
+
+            with doc.create(Section("Summary")):
+                summary = utils.escape_with_listings(issue["summary"])
+                doc.append(summary)
+
+            with doc.create(Section("Description")):
+                description = utils.escape_with_listings(issue["summary"])
+                doc.append(description)
+
+            with doc.create(Section("Attachments")):
+                with doc.create(Enumerate()) as enum:
+                    for attachment in issue["attachments"]:
+                        enum.add_item(self.__hyperlink(attachment["content"], attachment["filename"]))
+
+            with doc.create(Section("Commits")):
+                print()
+
+            with doc.create(Section("Comments")):
+                self.__add_comments(issue)
+
     def generate_report(self):
         doc = self.doc
         issue, connected_issues = self.data
         filename = issue["issue_key"]
         doc.append(NoEscape(r"\maketitle"))
 
-        with doc.create(Section("Summary")):
-            summary = utils.escape_with_listings(issue["summary"])
-            doc.append(summary)
+        self.__describe_issue(issue, root_issue=True)
 
-        with doc.create(Section("Description")):
-            description = utils.escape_with_listings(issue["summary"])
-            doc.append(description)
-
-        with doc.create(Section("Attachments")):
-            with doc.create(Enumerate()) as enum:
-                for attachment in issue["attachments"]:
-                    enum.add_item(self.__hyperlink(attachment["content"], attachment["filename"]))
-
-        with doc.create(Section("Comments")):
-            self.__add_comments(issue)
-
-        for index, issue in enumerate(connected_issues, start=1):
-            self.__describe_connected_issue(issue, index)
+        for issue in connected_issues:
+            self.__describe_issue(issue)
 
         doc.generate_pdf(filename, clean_tex=True)
         print("Report for {} is successfully created".format(filename))
