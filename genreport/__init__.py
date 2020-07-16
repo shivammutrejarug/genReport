@@ -173,3 +173,4 @@ class ReportGenerator:
             self.__describe_connected_issue(issue, index)
 
         doc.generate_pdf(filename, clean_tex=True)
+        print("Report for {} is successfully created".format(filename))
