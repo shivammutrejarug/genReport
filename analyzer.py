@@ -11,19 +11,19 @@ import utils
 PROJECTS = [
     "PDFBOX",
     "DERBY",
-    "CASSANDRA",
-    "YARN",
-    "HDFS",
-    "HADOOP",
-    "MAPREDUCE",
-    "ZOOKEEPER",
-    "CONNECTORS",  # ManifoldCF https://issues.apache.org/jira/projects/CONNECTORS/summary
-    "BIGTOP",
-    "OFBIZ",
-    "DIRSTUDIO",  # Directory Studio https://issues.apache.org/jira/projects/DIRSTUDIO/summary
-    "DIRMINA",  # MINA https://issues.apache.org/jira/projects/DIRMINA/summary
-    "CAMEL",  # Camel https://issues.apache.org/jira/projects/CAMEL/summary
-    "AXIS2"  # Axis2 https://issues.apache.org/jira/projects/AXIS2/summary
+    # "CASSANDRA",
+    # "YARN",
+    # "HDFS",
+    # "HADOOP",
+    # "MAPREDUCE",
+    # "ZOOKEEPER",
+    # "CONNECTORS",  # ManifoldCF https://issues.apache.org/jira/projects/CONNECTORS/summary
+    # "BIGTOP",
+    # "OFBIZ",
+    # "DIRSTUDIO",  # Directory Studio https://issues.apache.org/jira/projects/DIRSTUDIO/summary
+    # "DIRMINA",  # MINA https://issues.apache.org/jira/projects/DIRMINA/summary
+    # "CAMEL",  # Camel https://issues.apache.org/jira/projects/CAMEL/summary
+    # "AXIS2"  # Axis2 https://issues.apache.org/jira/projects/AXIS2/summary
 ]
 
 PROJECTS_WITH_QA_BOTS = [
@@ -44,7 +44,7 @@ def parse_arguments():
 
 
 def collect_issue_summary(project: str, issue: dict, save=True) -> \
-        Tuple[str, int, Set[str], Set[str], Set[str], Set[str], Set[str]]:
+        Tuple[str, int, Set[str], Set[str], Set[str], Set[str], Set[str], Set[str]]:
     """
 
     :param project: Related project
@@ -70,7 +70,7 @@ def collect_issue_summary(project: str, issue: dict, save=True) -> \
     # FIELD 5: URLs detected as mailing lists
     # FIELD 6: URLs detected as PDF documents
     # FIELD 7: Other issues
-    urls, revisions, mailing_lists, pdf_documents, other_issues = \
+    urls, revisions, mailing_lists, pdf_documents, archives, other_issues = \
         utils.extract_references(description_and_remote_links, project)
 
     # Parse Comments
@@ -80,7 +80,8 @@ def collect_issue_summary(project: str, issue: dict, save=True) -> \
         revisions.update(comment_details[1])
         mailing_lists.update(comment_details[2])
         pdf_documents.update(comment_details[3])
-        other_issues.update(comment_details[4])
+        archives.update(comment_details[4])
+        other_issues.update(comment_details[5])
 
     for issue in issue["issuelinks"]:
         other_issues.add(issue["issue_key"])
@@ -91,6 +92,7 @@ def collect_issue_summary(project: str, issue: dict, save=True) -> \
                revisions,
                mailing_lists,
                pdf_documents,
+               archives,
                other_issues)
 
     if save:
@@ -99,8 +101,7 @@ def collect_issue_summary(project: str, issue: dict, save=True) -> \
 
 
 def collect_issues_summary(project: str, save=True) -> List[
-    Tuple[str, int, Set[str], Set[str], Set[str], Set[str], Set[str]]
-]:
+    Tuple[str, int, Set[str], Set[str], Set[str], Set[str], Set[str], Set[str]]]:
     """
     For each Issue inside Projects/<project>/Issues, extract all types of references and return a data type containing
     all the necessary data
@@ -125,7 +126,9 @@ def collect_issues_summary(project: str, save=True) -> List[
 
 
 def __save_references(project: str,
-                      issue_summary: Tuple[str, int, Set[str], Set[str], Set[str], Set[str], Set[str]]) -> None:
+                      issue_summary: Tuple[
+                          str, int, Set[str], Set[str], Set[str], Set[str], Set[str], Set[str]
+                      ]) -> None:
     """
     Save references for an issue in JSON format.
     :param project: Project to write references for
@@ -143,13 +146,14 @@ def __save_references(project: str,
         "revisions": list(issue_summary[3]),
         "mailing_lists": list(issue_summary[4]),
         "pdf_documents": list(issue_summary[5]),
-        "other_issues": list(issue_summary[6])
+        "archives": list(issue_summary[6]),
+        "other_issues": list(issue_summary[7])
     }
     path = os.path.join(summary_dir, issue_summary[0] + ".json")
     utils.save_as_json(issue_dict, path)
 
 
-def generate_statistics(project: str) -> List[Tuple[int, int, int, int, int, int, int]]:
+def generate_statistics(project: str) -> List[Tuple[int, int, int, int, int, int, int, int]]:
     """
     Based on the references for each issue, generate the frequency of each type of references and split the data
     into blocks of 100 issues for a broader analysis of the data.
@@ -177,6 +181,7 @@ def generate_statistics(project: str) -> List[Tuple[int, int, int, int, int, int
                  list(data["revisions"]),
                  list(data["mailing_lists"]),
                  list(data["pdf_documents"]),
+                 list(data["archives"]),
                  list(data["other_issues"]))
             )
     issues = sorted(issues, key=lambda x: x[1])
@@ -202,17 +207,20 @@ def generate_statistics(project: str) -> List[Tuple[int, int, int, int, int, int
         revisions = 0
         mailing_lists = 0
         pdf_documents = 0
+        archives = 0
         other_issues = 0
         other_urls = 0
         for issue in block:
             revisions += len(issue[3])
             mailing_lists += len(issue[4])
             pdf_documents += len(issue[5])
-            other_issues += len(issue[6])
+            archives += len(issue[6])
+            other_issues += len(issue[7])
             other_urls += len(issue[2])
-            for i in range(2, 7):
+            for i in range(2, 8):
                 total += len(issue[i])
-        statistics.append((block_idx * 100, total, revisions, mailing_lists, pdf_documents, other_issues, other_urls))
+        statistics.append(
+            (block_idx * 100, total, revisions, mailing_lists, pdf_documents, archives, other_issues, other_urls))
         block_idx += 1
     return statistics
 
@@ -230,15 +238,16 @@ def make_plot(project: str, plots_dir: str,
     plt.close()
 
 
-def make_plots(project: str, statistics: List[Tuple[int, int, int, int, int, int, int]]):
+def make_plots(project: str, statistics: List[Tuple[int, int, int, int, int, int, int, int]]):
     blocks = [param[0] for param in statistics]
     types = [
         (1, "Total references"),
         (2, "Revisions"),
         (3, "Mailing Lists"),
         (4, "PDF documents"),
-        (5, "Other issues"),
-        (6, "Other URLs")
+        (5, "Archives"),
+        (6, "Other issues"),
+        (7, "Other URLs")
     ]
 
     plots_dir = os.path.join("Projects", project, "Plots")

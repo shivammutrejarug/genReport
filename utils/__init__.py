@@ -37,7 +37,7 @@ def construct_svn_revision_url(revision: str) -> str:
     return "https://svn.apache.org/r{}".format(revision_id)
 
 
-def extract_references(text: str, project: str) -> Tuple[Set[str], Set[str], Set[str], Set[str], Set[str]]:
+def extract_references(text: str, project: str) -> Tuple[Set[str], Set[str], Set[str], Set[str], Set[str], Set[str]]:
     """
     Extract different types of references from the specified text.
     :param text: Text to extract references from
@@ -57,9 +57,12 @@ def extract_references(text: str, project: str) -> Tuple[Set[str], Set[str], Set
     pdf_documents = filter_pdf_document_urls(urls)
     urls = urls.difference(pdf_documents)
 
+    archives = filter_archives_urls(urls)
+    urls = urls.difference(archives)
+
     other_issues = extract_issues(text, project)
 
-    return urls, revisions, mailing_lists, pdf_documents, other_issues
+    return urls, revisions, mailing_lists, pdf_documents, archives, other_issues
 
 
 def filter_pdf_document_urls(urls: Set[str]) -> Set[str]:
@@ -70,6 +73,17 @@ def filter_pdf_document_urls(urls: Set[str]) -> Set[str]:
     :return: List of PDF document URLS
     """
     return set([url for url in urls if url.endswith(".pdf")])
+
+
+def filter_archives_urls(urls: Set[str]) -> Set[str]:
+    """
+
+    :param urls:
+    :return:
+    """
+    return set([url for url in urls if any([url.endswith(ending)
+                                            for ending
+                                            in [".zip", ".tar", ".rar", ".iso", ".gz", ".rz", ".lz", ".7z"]])])
 
 
 def filter_mailing_list_urls(urls: Set[str], mailing_list_keys=None) -> Set[str]:
