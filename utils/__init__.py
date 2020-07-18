@@ -95,5 +95,5 @@ def filter_mailing_list_urls(urls: Set[str], mailing_list_keys=None) -> Set[str]
     :return: List of mailing list URLs
     """
     if not mailing_list_keys:
-        mailing_list_keys = ["mail-archives", "markmail"]
+        mailing_list_keys = ["mail-archive", "markmail", "pipermail", "hyperkitty", "hypermail", "mailinglistarchive"]
     return set([url for url in urls if any(key in url for key in mailing_list_keys)])

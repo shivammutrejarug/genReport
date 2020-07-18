@@ -42,12 +42,13 @@ def extract_urls(text: str, project: str, filter_svn_revisions=True, filter_issu
     urls = set(
         map(
             # if a URL ends with '.', '\' or '?', then we should remove that character
-            lambda url: url[:-1] if url[-1] in ['.', '\\', '?', ','] else url,
+            lambda url: url[:-1] if url[-1] in ['.', '\\', '?', ',', ':', '/'] else url,
             urls
         )
     )
     urls = set(
         map(
+            # if a URL ends with ')' and there is no opening bracket '(' in it
             lambda url: url[:-1] if url[-1] == ')' and '(' not in url else url,
             urls
         )
