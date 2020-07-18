@@ -34,9 +34,21 @@ def extract_urls(text: str, project: str, filter_svn_revisions=True, filter_issu
     # remove them beforehand.
     urls = set(url_matcher.findall(text))
     urls = set(
+        filter(
+            lambda url: url.startswith("http"),  # It has been observed that some extracted URLs do not start with http.
+            urls
+        )
+    )
+    urls = set(
         map(
             # if a URL ends with '.', '\' or '?', then we should remove that character
-            lambda url: url[:-1] if url[-1] in ['.', '\\', '?'] else url,
+            lambda url: url[:-1] if url[-1] in ['.', '\\', '?', ','] else url,
+            urls
+        )
+    )
+    urls = set(
+        map(
+            lambda url: url[:-1] if url[-1] == ')' and '(' not in url else url,
             urls
         )
     )
