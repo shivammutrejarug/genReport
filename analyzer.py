@@ -1,6 +1,6 @@
 import argparse
 import json
-from parser import JiraParser
+from jira_parser import JiraParser
 import matplotlib.pyplot as plt
 import os
 from typing import List, Tuple, Set
@@ -11,19 +11,19 @@ import utils
 PROJECTS = [
     "PDFBOX",
     "DERBY",
-    # "CASSANDRA",
-    # "YARN",
-    # "HDFS",
-    # "HADOOP",
-    # "MAPREDUCE",
-    # "ZOOKEEPER",
-    # "CONNECTORS",  # ManifoldCF https://issues.apache.org/jira/projects/CONNECTORS/summary
-    # "BIGTOP",
-    # "OFBIZ",
-    # "DIRSTUDIO",  # Directory Studio https://issues.apache.org/jira/projects/DIRSTUDIO/summary
-    # "DIRMINA",  # MINA https://issues.apache.org/jira/projects/DIRMINA/summary
-    # "CAMEL",  # Camel https://issues.apache.org/jira/projects/CAMEL/summary
-    # "AXIS2"  # Axis2 https://issues.apache.org/jira/projects/AXIS2/summary
+    "CASSANDRA",
+    "YARN",
+    "HDFS",
+    "HADOOP",
+    "MAPREDUCE",
+    "ZOOKEEPER",
+    "CONNECTORS",  # ManifoldCF https://issues.apache.org/jira/projects/CONNECTORS/summary
+    "BIGTOP",
+    "OFBIZ",
+    "DIRSTUDIO",  # Directory Studio https://issues.apache.org/jira/projects/DIRSTUDIO/summary
+    "DIRMINA",  # MINA https://issues.apache.org/jira/projects/DIRMINA/summary
+    "CAMEL",  # Camel https://issues.apache.org/jira/projects/CAMEL/summary
+    "AXIS2"  # Axis2 https://issues.apache.org/jira/projects/AXIS2/summary
 ]
 
 PROJECTS_WITH_QA_BOTS = [

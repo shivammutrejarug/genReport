@@ -5,42 +5,8 @@ from pylatex.utils import escape_latex, NoEscape, bold
 import os
 import utils
 from github_fetcher import GitHubFetcher
-from parser import JiraParser
+from jira_parser import JiraParser
 from typing import Tuple, List
-
-
-def __parse_arguments() -> ArgumentParser:
-    arg_parser = ArgumentParser()
-    arg_parser.add_argument("-g", "--github", help="Target Jira project's GitHub repository")
-    arg_parser.add_argument("-b", "--bots", help="List of bots to exclude from report, separated by comma")
-    arg_parser.add_argument("-i", "--issues", help="Issues to generate reports for, separated by comma and/or"
-                                                   "defined as ranges. For example, \"124,136-152,174\"", required=True)
-    arg_parser.add_argument("-e", "--exclude", help="Sections to skip when generating report, separated by comma."
-                                                    "Sections are: [summary, description, attachments, commits"
-                                                    "comments, other_issues]")
-    return arg_parser
-
-
-def __define_issues(issues_arg: str) -> List[str]:
-    issues = []
-    for issues_entry in issues_arg.split(','):
-        if issues_entry.isdecimal():  # If it is a single issue
-            issues.append(issues_entry)
-        else:
-            issues_range = issues_entry.split('-')
-            if len(issues_range) != 2 or not issues_range[0].isdecimal() or not issues_range[1].isdecimal():
-                print("Invalid issues list format")
-                return []
-
-            first_issue = int(issues_range[0])
-            last_issue = int(issues_range[1])
-            if last_issue < first_issue:
-                print("The range should be from smaller to bigger")
-                return []
-
-            for issue in range(first_issue, last_issue + 1):
-                issues.append(issue)
-    return issues
 
 
 class ReportGenerator:
