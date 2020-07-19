@@ -15,11 +15,16 @@ class ReportGenerator:
         self.project = project
         self.issue_key = issue_key
         self.github_repository = github_repository
-        self.bots = bots
-        if not exclude:
-            self.exclude = []
+
+        if bots:
+            self.bots = bots
         else:
+            self.bots = []
+
+        if exclude:
             self.exclude = exclude
+        else:
+            self.exclude = []
 
         self.data = self.__load_issue()
         self.commits = None
@@ -62,6 +67,7 @@ class ReportGenerator:
         return issue, connected_issues
 
     def __load_commits(self):
+        print("{}: loading commits".format(self.issue_key))
         issue, connected_issues = self.data
         issue_keys = [issue["issue_key"]] + [connected_issue["issue_key"] for connected_issue in connected_issues]
 
@@ -69,6 +75,7 @@ class ReportGenerator:
         commits = dict()
         for key in issue_keys:
             commits[key] = fetcher.get_commits(key)
+        print("{}: successfully loaded commits".format(self.project))
         return commits
 
     def __setup_packages(self):
