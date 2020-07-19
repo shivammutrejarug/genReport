@@ -108,16 +108,12 @@ class GitHubFetcher:
         :param issue_key: Target issue key
         :return: List of dictionaries representing pull requests
         """
-        if issue_key:
-            filename = issue_key + ".json"
-        else:
-            filename = "all.json"
-        path = os.path.join(self.savedir_pull_requests, filename)
+        path = os.path.join(self.savedir_pull_requests, "all.json")
         if not os.path.isfile(path):
-            pull_requests = self.fetch_pull_requests(issue_key)
+            pull_requests = self.fetch_pull_requests()
         else:
             pull_requests = utils.load_json(path)
-        if issue_key and filename == "all.json":
+        if issue_key:
             pull_requests = list(
                 filter(
                     lambda pr: issue_key in utils.extract_issues(pr["title"], self.project) or
