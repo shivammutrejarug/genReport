@@ -67,7 +67,7 @@ class ReportGenerator:
         return issue, connected_issues
 
     def __load_commits(self):
-        print("{}: loading commits".format(self.issue_key))
+        print("\t{}: loading commits".format(self.issue_key))
         issue, connected_issues = self.data
         issue_keys = [issue["issue_key"]] + [connected_issue["issue_key"] for connected_issue in connected_issues]
 
@@ -75,7 +75,7 @@ class ReportGenerator:
         commits = dict()
         for key in issue_keys:
             commits[key] = fetcher.get_commits(key)
-        print("{}: successfully loaded commits".format(self.project))
+        print("\t{}: successfully loaded commits".format(self.issue_key))
         return commits
 
     def __setup_packages(self):
@@ -93,7 +93,8 @@ class ReportGenerator:
         issue = self.data[0]
         preamble.append(NoEscape(r"\UseRawInputEncoding"))
         preamble.append(Command("title", issue["issue_key"]))
-        preamble.append(Command("author", issue["author"]))
+        author = issue["author"] if issue["author"] else "no author"
+        preamble.append(Command("author", author))
         preamble.append(Command("date", issue["created"].split("T")[0]))
         preamble.append(Command("lstset", NoEscape("tabsize = 4,"
                                                    r"showstringspaces = false,"
@@ -131,11 +132,11 @@ class ReportGenerator:
 
             if "attachments" not in self.exclude:
                 with doc.create(Section("Attachments")):
-                    with doc.create(Enumerate()) as enum:
-                        attachments = issue["attachments"]
-                        if not attachments:
-                            doc.append("No attachments")
-                        else:
+                    attachments = issue["attachments"]
+                    if not attachments:
+                        doc.append("No attachments")
+                    else:
+                        with doc.create(Enumerate()) as enum:
                             for attachment in issue["attachments"]:
                                 enum.add_item(self.__hyperlink(attachment["content"], attachment["filename"]))
 
@@ -159,15 +160,17 @@ class ReportGenerator:
 
     def generate_report(self):
         doc = self.doc
-        issue, connected_issues = self.data
-        filename = issue["issue_key"]
+        root_issue, connected_issues = self.data
+        filename = root_issue["issue_key"]
         doc.append(NoEscape(r"\maketitle"))
 
-        self.__describe_issue(issue, root_issue=True)
+        self.__describe_issue(root_issue, root_issue=True)
 
         if "other_issues" not in self.exclude:
             for issue in connected_issues:
                 self.__describe_issue(issue)
 
-        doc.generate_pdf(filename, clean_tex=True)
-        print("Report for {} is successfully created".format(filename))
+        utils.create_dir_if_necessary("Reports")
+        doc.generate_pdf(os.path.join("Reports", filename), clean_tex=True)
+
+        print("{}: report is successfully created\n".format(root_issue["issue_key"]))
