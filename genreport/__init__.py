@@ -1,5 +1,4 @@
-from argparse import ArgumentParser
-from pylatex import Document, Package, Command, Enumerate, Tabular
+from pylatex import Document, Package, Command, Enumerate, Subsection
 from pylatex.section import Chapter, Section
 from pylatex.utils import escape_latex, NoEscape, bold
 import os
@@ -27,9 +26,10 @@ class ReportGenerator:
             self.exclude = []
 
         self.data = self.__load_issue()
-        self.commits = None
+        self.commits, self.pull_requests = None, None
         if self.github_repository:
             self.commits = self.__load_commits()
+            self.pull_requests = self.__load_pull_requests()
 
         self.doc = Document(documentclass="report")
         self.__setup_packages()
@@ -38,7 +38,7 @@ class ReportGenerator:
     @staticmethod
     def __hyperlink(url, description):
         description = escape_latex(description)
-        return NoEscape(r"\href{" + url + "}{" + description + "}")
+        return NoEscape(r"\href{" + url + r"}{\underline{" + description + "}}")
 
     def __load_issue(self) -> Tuple[dict, List[dict]]:
         parser = JiraParser(self.project)
@@ -77,6 +77,18 @@ class ReportGenerator:
             commits[key] = fetcher.get_commits(key)
         print("\t{}: successfully loaded commits".format(self.issue_key))
         return commits
+
+    def __load_pull_requests(self):
+        print("\t{}: loading pull requests".format(self.issue_key))
+        issue, connected_issues = self.data
+        issue_keys = [issue["issue_key"]] + [connected_issue["issue_key"] for connected_issue in connected_issues]
+
+        fetcher = GitHubFetcher(self.project, self.github_repository.replace("https://github.com/", ""))
+        pull_requests = dict()
+        for key in issue_keys:
+            pull_requests[key] = fetcher.get_pull_requests(key)
+        print("\t{}: successfully loaded pull requests".format(self.issue_key))
+        return pull_requests
 
     def __setup_packages(self):
         packages = self.doc.packages
@@ -142,12 +154,13 @@ class ReportGenerator:
 
             if "commits" not in self.exclude:
                 with doc.create(Section("Commits")):
+                    issue_key = issue["issue_key"]
                     commits = self.commits
-                    if not commits:
+                    if not commits[issue_key]:
                         doc.append("No related commits")
                     else:
                         with doc.create(Enumerate()) as enum:
-                            for commit in commits[issue["issue_key"]]:
+                            for commit in commits[issue_key]:
                                 enum.add_item(NoEscape("Commit {} by {} ({}): {}".format(
                                     bold(commit["short_sha"]),
                                     bold(escape_latex(commit["author"])),
@@ -157,6 +170,31 @@ class ReportGenerator:
             if "comments" not in self.exclude:
                 with doc.create(Section("Comments")):
                     self.__add_comments(issue)
+
+            if "pull_requests" not in self.exclude:
+                with doc.create(Section("Pull requests")):
+                    issue_key = issue["issue_key"]
+                    pull_requests = self.pull_requests
+                    if not pull_requests[issue_key]:
+                        doc.append("No pull requests")
+                    else:
+                        for pr in pull_requests[issue_key]:
+                            with doc.create(Subsection("Pull request {}".format(pr["number"]))):
+                                doc.append(NoEscape(r"{}: {}\\".format(bold("Title"), pr["title"])))
+                                doc.append(NoEscape(r"{}: {}\\".format(bold("Author"), pr["author"])))
+                                doc.append(NoEscape(r"{}: {}\\".format(bold("Date"), pr["date"])))
+                                doc.append(NoEscape(r"{}: {}\\".format(bold("Status"), pr["status"])))
+                                doc.append(NoEscape(r"{}: ".format(bold("Comments"))))
+                                if not pr["comments"]:
+                                    doc.append("No comments")
+                                else:
+                                    with doc.create(Enumerate()) as enum:
+                                        for comment in pr["comments"]:
+                                            enum.add_item(NoEscape("{} ({}): {}".format(
+                                                bold(comment["author"]),
+                                                comment["date"],
+                                                escape_latex(comment["body"].replace('\r', '\n')))
+                                            ))
 
     def generate_report(self):
         doc = self.doc
