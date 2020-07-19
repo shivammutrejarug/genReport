@@ -1,7 +1,6 @@
 import errno
 import json
 import os
-from typing import Tuple
 
 from .ref_regex import *
 from .latex_transform import *
@@ -25,6 +24,10 @@ def create_dir_if_necessary(dir_path: str) -> None:
         except OSError as e:
             if e.errno != errno.EEXIST:
                 raise
+
+
+def split_and_strip(string: str, split_by: str) -> List[str]:
+    return [word.strip() for word in string.split(split_by)]
 
 
 def construct_svn_revision_url(revision: str) -> str:
