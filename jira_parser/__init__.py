@@ -76,6 +76,12 @@ class JiraParser:
         :return: Issue as a dictionary
         """
         issue = self.jira.issue(issue_key, self.fields).raw
+        try:
+            remote_links = self.jira.remote_links(issue["key"])
+            issue["remotelinks"] = [link.raw for link in remote_links]
+        except:
+            print("An error occurred while trying to retrieve remote links for issue {}".format(issue["key"]))
+            traceback.print_exc()
         if save:
             self.__save_issues_raw([issue])
         return issue
@@ -184,6 +190,7 @@ class JiraParser:
         :return: Dictionary representing the issue
         """
         filename = issue_key + ".json"
+        utils.create_dir_if_necessary(self.issues_dir)
         path_raw = os.path.join(self.issues_raw_dir, filename)
         if not os.path.isfile(path_raw):
             issue_raw = self.fetch_issue_raw(issue_key, save=True)
