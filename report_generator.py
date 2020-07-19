@@ -43,7 +43,7 @@ def define_issues(issues_arg: str) -> Optional[List[str]]:
 
 
 if __name__ == "__main__":
-    project, github, bots, issues, exclude = None, None, None, None, None
+    github, bots, issues, exclude = None, None, None, None
 
     args = parse_arguments()
     project = args.project
@@ -55,7 +55,7 @@ if __name__ == "__main__":
         exclude = utils.split_and_strip(args.exclude, ',')
     issues = define_issues(args.issues)
     if not issues:
-        print("Aborting.")
+        print("Aborting...")
 
     for issue in issues:
         issue_key = "{}-{}".format(project, issue)
