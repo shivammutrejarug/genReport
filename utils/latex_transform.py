@@ -77,10 +77,11 @@ def escape_listings(string: str, to_latex: bool = True) -> Tuple[str, List[Tuple
             # original text, there is a newline character, and PyLaTeX escapes it with a "\newline" command.
             # It is forbidden to include it after environments which are not fit right into the text.
             language = re.search(r"{code:((?s).*?)}", content)
-            if language and language.group(1).isalpha():
+            if language:
                 section = language.group(0)
                 language = language.group(1)
-                content = content.replace(section, r"\begin{lstlisting}[language=" + language + "]", 1)
+                lang_spec = r"[language=" + language + r"]" if language.isalpha() else ""
+                content = content.replace(section, r"\begin{lstlisting}" + lang_spec, 1)
             else:
                 content = content.replace(r"{code}", r"\begin{lstlisting}", 1)
             content = content.replace(r"{code}", r"\end{lstlisting}\ ", 1)
