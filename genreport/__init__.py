@@ -156,7 +156,7 @@ class ReportGenerator:
                             for attachment in issue["attachments"]:
                                 enum.add_item(self.__hyperlink(attachment["content"], attachment["filename"]))
 
-            if "commits" not in self.exclude:
+            if self.commits and "commits" not in self.exclude:
                 with doc.create(Section("Commits")):
                     issue_key = issue["issue_key"]
                     commits = self.commits
@@ -175,7 +175,7 @@ class ReportGenerator:
                 with doc.create(Section("Comments")):
                     self.__add_comments(issue)
 
-            if "pull_requests" not in self.exclude:
+            if self.pull_requests and "pull_requests" not in self.exclude:
                 with doc.create(Section("Pull requests")):
                     issue_key = issue["issue_key"]
                     pull_requests = self.pull_requests
