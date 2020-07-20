@@ -139,7 +139,7 @@ class ReportGenerator:
 
             if "description" not in self.exclude:
                 with doc.create(Section("Description")):
-                    description = utils.escape_with_listings(issue["summary"])
+                    description = utils.escape_with_listings(issue["description"])
                     doc.append(description)
 
             if "attachments" not in self.exclude:
