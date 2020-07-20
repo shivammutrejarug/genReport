@@ -66,7 +66,7 @@ if __name__ == "__main__":
         if invalid_sections:
             print("Invalid sections to exclude: {}. Aborting...".format(", ".join(invalid_sections)))
             exit(-1)
-        elif len(invalid_sections) == 7:
+        elif len(exclude) == 7:
             print("All sections are excluded. Aborting...")
             exit(0)
     issues = __define_issues(args.issues)
