@@ -11,10 +11,10 @@ __EXCLUDE_SECTIONS = {"summary", "description", "attachments", "commits", "pull_
 def __parse_arguments() -> argparse.Namespace:
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument("-p", "--project", help="Jira project in capital letters", required=True)
-    arg_parser.add_argument("-g", "--github", help="Target Jira project's GitHub repository")
-    arg_parser.add_argument("-b", "--bots", help="List of bots to exclude from report, separated by comma")
     arg_parser.add_argument("-i", "--issues", help="Issues to generate reports for, separated by comma and/or"
                                                    "defined as ranges. For example, \"124,136-152,174\"", required=True)
+    arg_parser.add_argument("-g", "--github", help="Target Jira project's GitHub repository")
+    arg_parser.add_argument("-b", "--bots", help="List of bots to exclude from report, separated by comma")
     arg_parser.add_argument("-e", "--exclude", help="Sections to skip when generating report, separated by comma."
                                                     "Sections are: [summary, description, attachments, commits, "
                                                     "pull_requests, comments, other_issues]")
