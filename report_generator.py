@@ -72,6 +72,7 @@ if __name__ == "__main__":
     issues = __define_issues(args.issues)
     if not issues:
         print("Aborting...")
+        exit(-1)
 
     for issue in issues:
         issue_key = "{}-{}".format(project, issue)
