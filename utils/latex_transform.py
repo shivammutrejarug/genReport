@@ -77,7 +77,7 @@ def escape_listings(string: str, to_latex: bool = True) -> Tuple[str, List[Tuple
             # original text, there is a newline character, and PyLaTeX escapes it with a "\newline" command.
             # It is forbidden to include it after environments which are not fit right into the text.
             language = re.search(r"{code:((?s).*?)}", content)
-            if language:
+            if language and language.group(1).isalpha():
                 section = language.group(0)
                 language = language.group(1)
                 content = content.replace(section, r"\begin{lstlisting}[language=" + language + "]", 1)
@@ -100,6 +100,7 @@ def escape_with_listings(string: str):
     :param string: String containing text without escaping and with Atlassian code listings
     :return: Formatted string
     """
+    string = string.replace('\r', '\n')
     string, extracted_listing_blocks = escape_listings(string)
     string, extracted_noformat_blocks = escape_noformat(string)
 
