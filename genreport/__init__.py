@@ -123,10 +123,14 @@ class ReportGenerator:
 
     def __add_comments(self, issue):
         doc = self.doc
-        with doc.create(Enumerate()) as enum:
-            for comment in issue["comments"]:
-                comment_body = utils.escape_with_listings(comment["body"])
-                enum.add_item(bold(comment["author"] + ": ") + comment_body)
+        filtered_comments = [comment for comment in issue["comments"] if comment["author"] not in self.bots]
+        if not filtered_comments:
+            doc.append("No comments")
+        else:
+            with doc.create(Enumerate()) as enum:
+                for comment in filtered_comments:
+                    comment_body = utils.escape_with_listings(comment["body"])
+                    enum.add_item(bold(comment["author"] + ": ") + comment_body)
 
     def __describe_issue(self, issue, root_issue: bool = False):
         doc = self.doc
