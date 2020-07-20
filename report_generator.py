@@ -22,6 +22,9 @@ def __parse_arguments() -> argparse.Namespace:
 
 
 def __define_issues(issues_arg: str) -> Optional[List[str]]:
+    if not issues_arg:
+        print("You should specify at least one issue.")
+        return None
     issues = []
     for issues_entry in utils.split_and_strip(issues_arg, ','):
         if issues_entry.isdecimal():  # If it is a single issue
@@ -40,9 +43,6 @@ def __define_issues(issues_arg: str) -> Optional[List[str]]:
 
             for issue in range(first_issue, last_issue + 1):
                 issues.append(str(issue))
-    if not issues:
-        print("You should specify at least one issue.")
-        return None
     issues.sort()
     return issues
 
