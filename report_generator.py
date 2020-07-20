@@ -61,8 +61,11 @@ if __name__ == "__main__":
         exclude = utils.split_and_strip(args.exclude, ',')
         invalid_sections = __validate_exclude_list(exclude)
         if invalid_sections:
-            print("Invalid sections to exclude: {}".format(", ".join(invalid_sections)))
+            print("Invalid sections to exclude: {}. Aborting...".format(", ".join(invalid_sections)))
             exit(-1)
+        elif len(invalid_sections) == 7:
+            print("All sections are excluded. Aborting...")
+            exit(0)
     issues = __define_issues(args.issues)
     if not issues:
         print("Aborting...")
