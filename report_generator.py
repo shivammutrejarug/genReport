@@ -82,3 +82,4 @@ if __name__ == "__main__":
             generator.generate_report()
         except JIRAError:
             print("{}: issue does not exist. Aborting...".format(issue_key))
+            exit(-1)
