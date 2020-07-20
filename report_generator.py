@@ -5,8 +5,10 @@ from jira.exceptions import JIRAError
 import genreport
 import utils
 
+__EXCLUDE_SECTIONS = {"summary", "description", "attachments", "commits", "pull_requests", "comments", "other_issues"}
 
-def parse_arguments() -> argparse.Namespace:
+
+def __parse_arguments() -> argparse.Namespace:
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument("-p", "--project", help="Jira project in capital letters", required=True)
     arg_parser.add_argument("-g", "--github", help="Target Jira project's GitHub repository")
@@ -19,7 +21,7 @@ def parse_arguments() -> argparse.Namespace:
     return arg_parser.parse_args()
 
 
-def define_issues(issues_arg: str) -> Optional[List[str]]:
+def __define_issues(issues_arg: str) -> Optional[List[str]]:
     issues = []
     for issues_entry in utils.split_and_strip(issues_arg, ','):
         if issues_entry.isdecimal():  # If it is a single issue
@@ -42,10 +44,14 @@ def define_issues(issues_arg: str) -> Optional[List[str]]:
     return issues
 
 
+def __validate_exclude_list(exclude_list: List[str]) -> List[str]:
+    return [exclude for exclude in exclude_list if exclude not in __EXCLUDE_SECTIONS]
+
+
 if __name__ == "__main__":
     github, bots, issues, exclude = None, None, None, None
 
-    args = parse_arguments()
+    args = __parse_arguments()
     project = args.project
     if args.github:
         github = args.github
@@ -53,7 +59,11 @@ if __name__ == "__main__":
         bots = utils.split_and_strip(args.bots, ',')
     if args.exclude:
         exclude = utils.split_and_strip(args.exclude, ',')
-    issues = define_issues(args.issues)
+        invalid_sections = __validate_exclude_list(exclude)
+        if invalid_sections:
+            print("Invalid sections to exclude: {}".format(", ".join(invalid_sections)))
+            exit(-1)
+    issues = __define_issues(args.issues)
     if not issues:
         print("Aborting...")
 
@@ -65,4 +75,3 @@ if __name__ == "__main__":
             generator.generate_report()
         except JIRAError:
             print("{}: issue does not exist. Aborting...".format(issue_key))
-
