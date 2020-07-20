@@ -29,17 +29,20 @@ def __define_issues(issues_arg: str) -> Optional[List[str]]:
         else:
             issues_range = utils.split_and_strip(issues_entry, '-')
             if len(issues_range) != 2 or not issues_range[0].isdecimal() or not issues_range[1].isdecimal():
-                print("Invalid issues list format")
+                print("Invalid issues list format.")
                 return None
 
             first_issue = int(issues_range[0])
             last_issue = int(issues_range[1])
             if last_issue < first_issue:
-                print("The range should be from smaller to bigger")
+                print("The range should be from smaller to bigger.")
                 return None
 
             for issue in range(first_issue, last_issue + 1):
                 issues.append(str(issue))
+    if not issues:
+        print("You should specify at least one issue.")
+        return None
     issues.sort()
     return issues
 
