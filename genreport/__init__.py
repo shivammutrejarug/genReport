@@ -1,6 +1,7 @@
 from pylatex import Document, Package, Command, Enumerate, Subsection
 from pylatex.section import Chapter, Section
 from pylatex.utils import escape_latex, NoEscape, bold
+from github.GithubException import UnknownObjectException
 import os
 import utils
 from github_fetcher import GitHubFetcher
@@ -28,8 +29,12 @@ class ReportGenerator:
         self.data = self.__load_issue()
         self.commits, self.pull_requests = None, None
         if self.github_repository:
-            self.commits = self.__load_commits()
-            self.pull_requests = self.__load_pull_requests()
+            try:
+                self.commits = self.__load_commits()
+                self.pull_requests = self.__load_pull_requests()
+            except UnknownObjectException:
+                print("Invalid GitHub repository. Aborting...")
+                exit(-1)
 
         self.doc = Document(documentclass="report")
         self.__setup_packages()
