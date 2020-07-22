@@ -11,7 +11,7 @@ DATE_FORMAT = "%Y-%m-%d"
 class GitHubFetcher:
     def __init__(self, project: str, repo_name: str):
         self.project = project
-        self.github = Github("AlexFyod", "NormalFortExpress23yZ4R3R}{7if2")
+        self.github = Github()
         self.repo = self.github.get_repo(repo_name)
         self.savedir_commits = os.path.join("Projects", self.project, "Commits")
         self.savedir_pull_requests = os.path.join("Projects", self.project, "PullRequests")
