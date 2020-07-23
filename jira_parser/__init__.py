@@ -326,6 +326,7 @@ class JiraParser:
             for comment in fields["comment"]["comments"]
         ]
 
+        # Pull requests and commits
         json_object["pull_requests"], json_object["commits"] = [], []
         if self.github:
             json_object["pull_requests"] = self.github.get_pull_requests(issue["key"])

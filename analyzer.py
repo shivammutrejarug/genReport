@@ -1,50 +1,26 @@
 import argparse
 import json
-from jira_parser import JiraParser
 import matplotlib.pyplot as plt
 import os
 from typing import List, Tuple, Set
 import shutil
+from github.GithubException import UnknownObjectException, BadCredentialsException
 
+from jira_parser import JiraParser
 import utils
-
-PROJECTS = [
-    "PDFBOX",
-    "DERBY",
-    "CASSANDRA",
-    "YARN",
-    "HDFS",
-    "HADOOP",
-    "MAPREDUCE",
-    "ZOOKEEPER",
-    "CONNECTORS",  # ManifoldCF https://issues.apache.org/jira/projects/CONNECTORS/summary
-    "BIGTOP",
-    "OFBIZ",
-    "DIRSTUDIO",  # Directory Studio https://issues.apache.org/jira/projects/DIRSTUDIO/summary
-    "DIRMINA",  # MINA https://issues.apache.org/jira/projects/DIRMINA/summary
-    "CAMEL",  # Camel https://issues.apache.org/jira/projects/CAMEL/summary
-    "AXIS2"  # Axis2 https://issues.apache.org/jira/projects/AXIS2/summary
-]
-
-PROJECTS_WITH_QA_BOTS = [
-    "HBASE",  # HBase https://issues.apache.org/jira/projects/HBASE/summary
-    "HIVE",  # Hive https://issues.apache.org/jira/projects/HIVE/summary
-]
-
-PROJECTS_WITH_PULL_REQUESTS = [
-    "TAJO",  # Tajo https://issues.apache.org/jira/projects/TAJO/summary
-    "NUTCH"  # Nutch https://issues.apache.org/jira/projects/NUTCH/summary
-]
 
 
 def __parse_arguments():
     arg_parser = argparse.ArgumentParser()
-    arg_parser.add_argument("-j", "--jira-project", help="Target Jira project")
+    arg_parser.add_argument("-p", "--project", help="Target Jira project in capital letters", required=True)
+    arg_parser.add_argument("-g", "--github", help="Target Jira project's GitHub repository")
+    arg_parser.add_argument("-c", "--credentials", help="GitHub username and pasword separated by comma."
+                                                        "Compulsory if GitHub repository is specified")
     return arg_parser.parse_args()
 
 
 def __collect_issue_summary(project: str, issue: dict, save=True) -> \
-        Tuple[str, int, Set[str], Set[str], Set[str], Set[str], Set[str], Set[str]]:
+        Tuple[str, int, Set[str], Set[str], Set[str], Set[str], Set[str], Set[str], List[str], List[str]]:
     """
 
     :param project: Related project
@@ -69,7 +45,8 @@ def __collect_issue_summary(project: str, issue: dict, save=True) -> \
     # FIELD 4: revision IDs
     # FIELD 5: URLs detected as mailing lists
     # FIELD 6: URLs detected as PDF documents
-    # FIELD 7: Other issues
+    # FIELD 7: URLs detected as archive files
+    # FIELD 8: Other issues
     urls, revisions, mailing_lists, pdf_documents, archives, other_issues = \
         utils.extract_references(description_and_remote_links, project)
 
@@ -83,8 +60,13 @@ def __collect_issue_summary(project: str, issue: dict, save=True) -> \
         archives.update(comment_details[4])
         other_issues.update(comment_details[5])
 
-    for issue in issue["issuelinks"]:
-        other_issues.add(issue["issue_key"])
+    for other_issue in issue["issuelinks"]:
+        other_issues.add(other_issue["issue_key"])
+
+    # FIELD 9: commits
+    # FIELD 10: pull requests
+    commits = [commit["sha"] for commit in issue["commits"]]
+    pull_requests = [str(pr["number"]) for pr in issue["pull_requests"]]
 
     summary = (issue_key,
                issue_id,
@@ -93,7 +75,9 @@ def __collect_issue_summary(project: str, issue: dict, save=True) -> \
                mailing_lists,
                pdf_documents,
                archives,
-               other_issues)
+               other_issues,
+               commits,
+               pull_requests)
 
     if save:
         __save_references(project, summary)
@@ -101,7 +85,7 @@ def __collect_issue_summary(project: str, issue: dict, save=True) -> \
 
 
 def __collect_issues_summary(project: str, save=True) -> List[
-    Tuple[str, int, Set[str], Set[str], Set[str], Set[str], Set[str], Set[str]]]:
+    Tuple[str, int, Set[str], Set[str], Set[str], Set[str], Set[str], Set[str], List[str], List[str]]]:
     """
     For each Issue inside Projects/<project>/Issues, extract all types of references and return a data type containing
     all the necessary data
@@ -127,7 +111,7 @@ def __collect_issues_summary(project: str, save=True) -> List[
 
 def __save_references(project: str,
                       issue_summary: Tuple[
-                          str, int, Set[str], Set[str], Set[str], Set[str], Set[str], Set[str]
+                          str, int, Set[str], Set[str], Set[str], Set[str], Set[str], Set[str], List[str], List[str]
                       ]) -> None:
     """
     Save references for an issue in JSON format.
@@ -147,13 +131,15 @@ def __save_references(project: str,
         "mailing_lists": list(issue_summary[4]),
         "pdf_documents": list(issue_summary[5]),
         "archives": list(issue_summary[6]),
-        "other_issues": list(issue_summary[7])
+        "other_issues": list(issue_summary[7]),
+        "commits": issue_summary[8],
+        "pull_requests": issue_summary[9]
     }
     path = os.path.join(summary_dir, issue_summary[0] + ".json")
     utils.save_as_json(issue_dict, path)
 
 
-def __generate_statistics(project: str) -> List[Tuple[int, int, int, int, int, int, int, int]]:
+def __generate_statistics(project: str) -> List[Tuple[int, int, int, int, int, int, int, int, int, int]]:
     """
     Based on the references for each issue, generate the frequency of each type of references and split the data
     into blocks of 100 issues for a broader analysis of the data.
@@ -164,8 +150,11 @@ def __generate_statistics(project: str) -> List[Tuple[int, int, int, int, int, i
         3. Number of revisions
         4. Number of mailing lists
         5. Number of PDF documents URLs
-        6. Number of other issues
-        7. Number of uncategorized URLs
+        6. Number of archive files URLs
+        7. Number of other issues
+        8. Number of uncategorized URLs
+        9. Number of commits
+        10. Number of pull requests
     """
     issues = []
     summary_directory = os.path.join("Projects", project, "Summary")
@@ -182,7 +171,9 @@ def __generate_statistics(project: str) -> List[Tuple[int, int, int, int, int, i
                  list(data["mailing_lists"]),
                  list(data["pdf_documents"]),
                  list(data["archives"]),
-                 list(data["other_issues"]))
+                 list(data["other_issues"]),
+                 data["commits"],
+                 data["pull_requests"])
             )
     issues = sorted(issues, key=lambda x: x[1])
 
@@ -210,6 +201,8 @@ def __generate_statistics(project: str) -> List[Tuple[int, int, int, int, int, i
         archives = 0
         other_issues = 0
         other_urls = 0
+        commits = 0
+        pull_requests = 0
         for issue in block:
             revisions += len(issue[3])
             mailing_lists += len(issue[4])
@@ -217,17 +210,40 @@ def __generate_statistics(project: str) -> List[Tuple[int, int, int, int, int, i
             archives += len(issue[6])
             other_issues += len(issue[7])
             other_urls += len(issue[2])
-            for i in range(2, 8):
+            commits += len(issue[8])
+            pull_requests += len(issue[9])
+            for i in range(2, 10):
                 total += len(issue[i])
         statistics.append(
-            (block_idx * 100, total, revisions, mailing_lists, pdf_documents, archives, other_issues, other_urls))
+            (block_idx * 100, total, revisions, mailing_lists, pdf_documents, archives, other_issues, other_urls,
+             commits, pull_requests))
         block_idx += 1
     return statistics
 
 
 def __make_plot(project: str, plots_dir: str,
-                statistics: List[Tuple[int, int, int, int, int, int, int]], blocks: List[int],
-                param_idx: int, param_title: str):
+                statistics: List[Tuple[int, int, int, int, int, int, int, int, int]], blocks: List[int],
+                param_idx: int, param_title: str) -> None:
+    """
+    Make a plot for the statistics provided.
+    :param project: Project name
+    :param plots_dir: Directory where to save the plot
+    :param statistics: List of tuples representing generated statistics with the following fields:
+        1. Total number of references in block
+        2. Number of revisions
+        3. Number of mailing lists
+        4. Number of PDF documents URLs
+        5. Number of archive files URLs
+        6. Number of other issues
+        7. Number of uncategorized URLs
+        8. Number of commits
+        9. Number of pull requests
+        10. Number of pull requests
+    :param blocks: List of 100-based values representing blocks (100 = block 1, 300 = block 3, etc.)
+    :param param_idx: Index of the parameter to make the plot for
+    :param param_title: Name of the parameter to make the plot for
+    :return: None
+    """
     x = blocks
     y = [param[param_idx] for param in statistics]
     plt.plot(x, y)
@@ -238,7 +254,22 @@ def __make_plot(project: str, plots_dir: str,
     plt.close()
 
 
-def __make_plots(project: str, statistics: List[Tuple[int, int, int, int, int, int, int, int]]):
+def __make_plots(project: str, statistics: List[Tuple[int, int, int, int, int, int, int, int, int, int]]) -> None:
+    """
+    Make plots for the statistics provided.
+    :param project: Project name
+    :param statistics: List of tuples representing generated statistics with the following fields:
+        1. Total number of references in block
+        2. Number of revisions
+        3. Number of mailing lists
+        4. Number of PDF documents URLs
+        5. Number of archive files URLs
+        6. Number of other issues
+        7. Number of uncategorized URLs
+        8. Number of commits
+        9. Number of pull requests
+    :return: None
+    """
     blocks = [param[0] for param in statistics]
     types = [
         (1, "Total references"),
@@ -247,7 +278,9 @@ def __make_plots(project: str, statistics: List[Tuple[int, int, int, int, int, i
         (4, "PDF documents"),
         (5, "Archives"),
         (6, "Other issues"),
-        (7, "Other URLs")
+        (7, "Other URLs"),
+        (8, "Commits"),
+        (9, "Pull requests")
     ]
 
     plots_dir = os.path.join("Projects", project, "Plots")
@@ -260,12 +293,28 @@ def __make_plots(project: str, statistics: List[Tuple[int, int, int, int, int, i
 
 if __name__ == "__main__":
     args = __parse_arguments()
-    if args.jira_project:
-        PROJECTS = [args.jira_project]
-    for project in PROJECTS:
-        parser = JiraParser(project)
+    project = args.project
+    github_repository, github_credentials = None, None
+    if args.github:
+        github_repository = args.github
+        if not args.credentials:
+            print("You should specify GitHub credentials as well. For example:\n"
+                  "--credentials \"github_username,github_password\"\n"
+                  "-c \"github_username,github_password\"")
+            exit(-1)
+        else:
+            github_credentials = utils.define_github_credentials(args.credentials)
+
+    try:
+        parser = JiraParser(project, github_repository, github_credentials)
         parser.fetch_issues_raw()
         parser.parse_issues()
-        summary = __collect_issues_summary(project)
-        statistics = __generate_statistics(project)
-        __make_plots(project, statistics)
+    except UnknownObjectException:
+        print("Invalid GitHub repository. Aborting...")
+        exit(-1)
+    except BadCredentialsException:
+        print("Invalid GitHub credentials. Aborting...")
+        exit(-1)
+    summary = __collect_issues_summary(project)
+    statistics = __generate_statistics(project)
+    __make_plots(project, statistics)
