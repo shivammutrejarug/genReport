@@ -98,7 +98,7 @@ def escape_listings(string: str, to_latex: bool = True) -> Tuple[str, List[Tuple
     return string, listings
 
 
-def escape_with_listings(string: str):
+def escape_with_listings(string: str) -> NoEscape:
     """
     Escape LaTeX characters except code listings. All Atlassian code listings and noformat blocks are converted
     to the corresponding LaTeX ones.
