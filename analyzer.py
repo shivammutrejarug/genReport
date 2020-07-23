@@ -294,6 +294,7 @@ def __make_plots(project: str, statistics: List[Tuple[int, int, int, int, int, i
 if __name__ == "__main__":
     args = __parse_arguments()
     project = args.project
+
     github_repository, github_credentials = None, None
     if args.github:
         github_repository = args.github
@@ -308,6 +309,7 @@ if __name__ == "__main__":
     try:
         parser = JiraParser(project, github_repository, github_credentials)
         parser.fetch_issues_raw()
+        # While parsing issues, the program may fail to access GitHub repository or to use credentials provided.
         parser.parse_issues()
     except UnknownObjectException:
         print("Invalid GitHub repository. Aborting...")
