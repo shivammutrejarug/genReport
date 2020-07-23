@@ -3,6 +3,7 @@ from typing import List, Tuple, Optional
 from jira.exceptions import JIRAError
 
 import genreport
+import github_fetcher
 import utils
 
 __EXCLUDE_SECTIONS = {"summary", "description", "attachments", "commits", "pull_requests", "comments", "other_issues"}
@@ -49,14 +50,6 @@ def __define_issues(issues_arg: str) -> Optional[List[str]]:
     return issues
 
 
-def __define_github_credentials(credentials: str) -> Tuple[str, str]:
-    credentials = utils.split_and_strip(credentials, ',')
-    if len(credentials) != 2:
-        print("Invalid credentials form. You should define them as \"github_username,github_password\"")
-        exit(-1)
-    return credentials[0], credentials[1]
-
-
 def __validate_exclude_list(exclude_list: List[str]) -> List[str]:
     return [exclude for exclude in exclude_list if exclude not in __EXCLUDE_SECTIONS]
 
@@ -74,7 +67,7 @@ if __name__ == "__main__":
                   "-c \"github_username,github_password\"")
             exit(-1)
         else:
-            github_credentials = __define_github_credentials(args.credentials)
+            github_credentials = utils.define_github_credentials(args.credentials)
     if args.bots:
         bots = utils.split_and_strip(args.bots, ',')
     if args.exclude:

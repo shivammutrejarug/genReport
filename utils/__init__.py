@@ -26,6 +26,14 @@ def create_dir_if_necessary(dir_path: str) -> None:
                 raise
 
 
+def define_github_credentials(credentials: str) -> Tuple[str, str]:
+    credentials = split_and_strip(credentials, ',')
+    if len(credentials) != 2:
+        print("Invalid credentials form. You should define them as \"github_username,github_password\"")
+        exit(-1)
+    return credentials[0], credentials[1]
+
+
 def split_and_strip(string: str, split_by: str) -> List[str]:
     return [word.strip() for word in string.split(split_by)]
 
