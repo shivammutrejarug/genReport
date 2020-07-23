@@ -1,9 +1,8 @@
 import argparse
-from typing import List, Tuple, Optional
+from typing import List, Optional
 from jira.exceptions import JIRAError
 
 import genreport
-import github_fetcher
 import utils
 
 __EXCLUDE_SECTIONS = {"summary", "description", "attachments", "commits", "pull_requests", "comments", "other_issues"}
