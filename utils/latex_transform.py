@@ -85,11 +85,15 @@ def escape_listings(string: str, to_latex: bool = True) -> Tuple[str, List[Tuple
             else:
                 content = content.replace(r"{code}", r"\begin{lstlisting}", 1)
             content = content.replace(r"{code}", r"\end{lstlisting}\ ", 1)
-        if len(content) > 400:
-            # If the string length is too big, LaTeX throws an error "Dimension too large".
-            # Unfortunately, I couldn't find what is the max dimension, so let's say that typical
-            # line never exceeds 400 characters, and so, after each 400 characters, a newline character is inserted.
-            content = '\n'.join(content[i:i + 400] for i in range(0, len(content), 400))
+        lines = content.split('\n')
+        for line in lines:
+            if len(line) > 400:
+                # If the string length is too big, LaTeX throws an error "Dimension too large".
+                # Unfortunately, I couldn't find what is the max dimension, so let's say that typical
+                # line never exceeds 400 characters, and so, after each 400 characters in a line,
+                # a newline character is inserted.
+                content = '\n'.join(line[i:i + 400] for i in range(0, len(line), 400))
+        '\n'.join(lines)
         listings.append((key, content))
     return string, listings
 
