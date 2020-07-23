@@ -1,7 +1,7 @@
 from pylatex import Document, Package, Command, Enumerate, Subsection
 from pylatex.section import Chapter, Section
 from pylatex.utils import escape_latex, NoEscape, bold
-from github.GithubException import UnknownObjectException
+from github.GithubException import UnknownObjectException, BadCredentialsException
 import os
 import utils
 from github_fetcher import GitHubFetcher
@@ -10,11 +10,13 @@ from typing import Tuple, List
 
 
 class ReportGenerator:
-    def __init__(self, project: str, issue_key: str, github_repository: str = None, bots: List[str] = None,
+    def __init__(self, project: str, issue_key: str, github_repository: str = None,
+                 github_credentials: Tuple[str, str] = None, bots: List[str] = None,
                  exclude: List[str] = None):
         self.project = project
         self.issue_key = issue_key
         self.github_repository = github_repository
+        self.credentials = github_credentials
 
         if bots:
             self.bots = bots
@@ -34,6 +36,9 @@ class ReportGenerator:
                 self.pull_requests = self.__load_pull_requests()
             except UnknownObjectException:
                 print("Invalid GitHub repository. Aborting...")
+                exit(-1)
+            except BadCredentialsException:
+                print("Invalid GitHub credentials. Aborting...")
                 exit(-1)
 
         self.doc = Document(documentclass="report")
@@ -76,7 +81,8 @@ class ReportGenerator:
         issue, connected_issues = self.data
         issue_keys = [issue["issue_key"]] + [connected_issue["issue_key"] for connected_issue in connected_issues]
 
-        fetcher = GitHubFetcher(self.project, self.github_repository.replace("https://github.com/", ""))
+        fetcher = GitHubFetcher(self.project, self.github_repository.replace("https://github.com/", ""),
+                                self.credentials)
         commits = dict()
         for key in issue_keys:
             commits[key] = fetcher.get_commits(key)
@@ -88,7 +94,8 @@ class ReportGenerator:
         issue, connected_issues = self.data
         issue_keys = [issue["issue_key"]] + [connected_issue["issue_key"] for connected_issue in connected_issues]
 
-        fetcher = GitHubFetcher(self.project, self.github_repository.replace("https://github.com/", ""))
+        fetcher = GitHubFetcher(self.project, self.github_repository.replace("https://github.com/", ""),
+                                self.credentials)
         pull_requests = dict()
         for key in issue_keys:
             pull_requests[key] = fetcher.get_pull_requests(key)

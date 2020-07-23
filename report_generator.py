@@ -1,5 +1,5 @@
 import argparse
-from typing import List, Optional
+from typing import List, Tuple, Optional
 from jira.exceptions import JIRAError
 
 import genreport
@@ -14,6 +14,8 @@ def __parse_arguments() -> argparse.Namespace:
     arg_parser.add_argument("-i", "--issues", help="Issues to generate reports for, separated by comma and/or"
                                                    "defined as ranges. For example, \"124,136-152,174\"", required=True)
     arg_parser.add_argument("-g", "--github", help="Target Jira project's GitHub repository")
+    arg_parser.add_argument("-c", "--credentials", help="GitHub username and pasword separated by comma."
+                                                        "Compulsory if GitHub repository is specified")
     arg_parser.add_argument("-b", "--bots", help="List of bots to exclude from report, separated by comma")
     arg_parser.add_argument("-e", "--exclude", help="Sections to skip when generating report, separated by comma."
                                                     "Sections are: [summary, description, attachments, commits, "
@@ -47,17 +49,31 @@ def __define_issues(issues_arg: str) -> Optional[List[str]]:
     return issues
 
 
+def __define_github_credentials(credentials: str) -> Tuple[str, str]:
+    credentials = utils.split_and_strip(credentials, ',')
+    if len(credentials) != 2:
+        print("Invalid credentials form. You should define them as \"github_username,github_password\"")
+        exit(-1)
+    return credentials[0], credentials[1]
+
 def __validate_exclude_list(exclude_list: List[str]) -> List[str]:
     return [exclude for exclude in exclude_list if exclude not in __EXCLUDE_SECTIONS]
 
 
 if __name__ == "__main__":
-    github, bots, issues, exclude = None, None, None, None
+    github, github_credentials, bots, issues, exclude = None, None, None, None, None
 
     args = __parse_arguments()
     project = args.project
     if args.github:
         github = args.github
+        if args.credentials is None:
+            print("You should specify GitHub credentials as well. For example:\n"
+                  "--credentials \"github_username,github_password\"\n"
+                  "-c \"github_username,github_password\"")
+            exit(-1)
+        else:
+            github_credentials = __define_github_credentials(args.credentials)
     if args.bots:
         bots = utils.split_and_strip(args.bots, ',')
     if args.exclude:
@@ -78,7 +94,7 @@ if __name__ == "__main__":
         issue_key = "{}-{}".format(project, issue)
         print("{}: generating report".format(issue_key))
         try:
-            generator = genreport.ReportGenerator(project, issue_key, github, bots, exclude)
+            generator = genreport.ReportGenerator(project, issue_key, github, github_credentials, bots, exclude)
             generator.generate_report()
         except JIRAError:
             print("{}: issue does not exist. Aborting...".format(issue_key))

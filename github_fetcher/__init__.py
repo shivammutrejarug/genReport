@@ -1,7 +1,7 @@
 from github import Github
 
 import os
-from typing import List
+from typing import List, Tuple
 
 import utils
 
@@ -9,9 +9,9 @@ DATE_FORMAT = "%Y-%m-%d"
 
 
 class GitHubFetcher:
-    def __init__(self, project: str, repo_name: str):
+    def __init__(self, project: str, repo_name: str, credentials: Tuple[str, str]):
         self.project = project
-        self.github = Github()
+        self.github = Github(credentials[0], credentials[1])
         self.repo = self.github.get_repo(repo_name)
         self.savedir_commits = os.path.join("Projects", self.project, "Commits")
         self.savedir_pull_requests = os.path.join("Projects", self.project, "PullRequests")
