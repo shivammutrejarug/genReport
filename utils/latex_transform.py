@@ -101,7 +101,7 @@ def escape_with_listings(string: str):
     :param string: String containing text without escaping and with Atlassian code listings
     :return: Formatted string
     """
-    string = string.replace('\r', '\n')
+    string = string.replace("\r\n", '\n')
     string, extracted_listing_blocks = escape_listings(string)
     string, extracted_noformat_blocks = escape_noformat(string)
 
