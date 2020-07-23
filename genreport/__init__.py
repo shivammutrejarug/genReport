@@ -181,7 +181,7 @@ class ReportGenerator:
                     comment_body = utils.escape_with_listings(comment["body"])
                     enum.add_item(bold(comment["author"] + ": ") + comment_body)
 
-    def __describe_issue(self, issue, root_issue: bool = False) -> None:
+    def __describe_issue(self, issue: dict, root_issue: bool = False) -> None:
         """
         Describe the issue passed in the following form:
             1. Summary
