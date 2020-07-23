@@ -37,13 +37,13 @@ PROJECTS_WITH_PULL_REQUESTS = [
 ]
 
 
-def parse_arguments():
+def __parse_arguments():
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument("-j", "--jira-project", help="Target Jira project")
     return arg_parser.parse_args()
 
 
-def collect_issue_summary(project: str, issue: dict, save=True) -> \
+def __collect_issue_summary(project: str, issue: dict, save=True) -> \
         Tuple[str, int, Set[str], Set[str], Set[str], Set[str], Set[str], Set[str]]:
     """
 
@@ -100,7 +100,7 @@ def collect_issue_summary(project: str, issue: dict, save=True) -> \
     return summary
 
 
-def collect_issues_summary(project: str, save=True) -> List[
+def __collect_issues_summary(project: str, save=True) -> List[
     Tuple[str, int, Set[str], Set[str], Set[str], Set[str], Set[str], Set[str]]]:
     """
     For each Issue inside Projects/<project>/Issues, extract all types of references and return a data type containing
@@ -120,7 +120,7 @@ def collect_issues_summary(project: str, save=True) -> List[
         path = os.path.join(directory, filename)
         with open(path, 'r') as issue_file:
             issue = json.load(issue_file)
-            summary = collect_issue_summary(project, issue, save)
+            summary = __collect_issue_summary(project, issue, save)
             issues.append(summary)
     return issues
 
@@ -153,7 +153,7 @@ def __save_references(project: str,
     utils.save_as_json(issue_dict, path)
 
 
-def generate_statistics(project: str) -> List[Tuple[int, int, int, int, int, int, int, int]]:
+def __generate_statistics(project: str) -> List[Tuple[int, int, int, int, int, int, int, int]]:
     """
     Based on the references for each issue, generate the frequency of each type of references and split the data
     into blocks of 100 issues for a broader analysis of the data.
@@ -225,9 +225,9 @@ def generate_statistics(project: str) -> List[Tuple[int, int, int, int, int, int
     return statistics
 
 
-def make_plot(project: str, plots_dir: str,
-              statistics: List[Tuple[int, int, int, int, int, int, int]], blocks: List[int],
-              param_idx: int, param_title: str):
+def __make_plot(project: str, plots_dir: str,
+                statistics: List[Tuple[int, int, int, int, int, int, int]], blocks: List[int],
+                param_idx: int, param_title: str):
     x = blocks
     y = [param[param_idx] for param in statistics]
     plt.plot(x, y)
@@ -238,7 +238,7 @@ def make_plot(project: str, plots_dir: str,
     plt.close()
 
 
-def make_plots(project: str, statistics: List[Tuple[int, int, int, int, int, int, int, int]]):
+def __make_plots(project: str, statistics: List[Tuple[int, int, int, int, int, int, int, int]]):
     blocks = [param[0] for param in statistics]
     types = [
         (1, "Total references"),
@@ -255,17 +255,17 @@ def make_plots(project: str, statistics: List[Tuple[int, int, int, int, int, int
     os.mkdir(plots_dir)
 
     for t in types:
-        make_plot(project, plots_dir, statistics, blocks, t[0], t[1])
+        __make_plot(project, plots_dir, statistics, blocks, t[0], t[1])
 
 
 if __name__ == "__main__":
-    args = parse_arguments()
+    args = __parse_arguments()
     if args.jira_project:
         PROJECTS = [args.jira_project]
     for project in PROJECTS:
         parser = JiraParser(project)
         parser.fetch_issues_raw()
         parser.parse_issues()
-        summary = collect_issues_summary(project)
-        statistics = generate_statistics(project)
-        make_plots(project, statistics)
+        summary = __collect_issues_summary(project)
+        statistics = __generate_statistics(project)
+        __make_plots(project, statistics)
