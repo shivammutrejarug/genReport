@@ -87,8 +87,7 @@ def extract_revisions(text: str) -> Set[str]:
     :param text: Text to extract revisions IDs from
     :return: List containing extracted revision IDs
     """
-    # return set(svn_revision_matcher.findall(text) + git_commit_matcher.findall(text))
-    return set(svn_revision_matcher.findall(text))
+    return set(svn_revision_matcher.findall(text) + git_commit_matcher.findall(text))
 
 
 def extract_numbers(text: str) -> List[int]:
