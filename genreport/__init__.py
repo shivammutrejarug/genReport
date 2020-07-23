@@ -108,7 +108,7 @@ class ReportGenerator:
         print("\t{}: successfully loaded commits".format(self.issue_key))
         return commits
 
-    def __load_pull_requests(self):
+    def __load_pull_requests(self) -> dict:
         """
         Load pull requests for the issue specified by the field "issue_key". Loaded pull requests represent
         a dictionary, where the key is an issue key and value is a list of related pull requests.
