@@ -24,6 +24,11 @@ def __parse_arguments() -> argparse.Namespace:
 
 
 def __define_issues(issues_arg: str) -> Optional[List[str]]:
+    """
+    Split the string of issues into the list of issues. Returns None if failed to parse issues.
+    :param issues_arg: String representing issues and issue ranges separated by comma
+    :return: List of parsed issues
+    """
     if not issues_arg:
         print("You should specify at least one issue.")
         return None
@@ -32,7 +37,7 @@ def __define_issues(issues_arg: str) -> Optional[List[str]]:
         if issues_entry.isdecimal():  # If it is a single issue
             issues.append(issues_entry)
         else:
-            issues_range = utils.split_and_strip(issues_entry, '-')
+            issues_range = utils.split_and_strip(issues_entry, '-')  # Split the range of issues, e.g. 123-130
             if len(issues_range) != 2 or not issues_range[0].isdecimal() or not issues_range[1].isdecimal():
                 print("Invalid issues list format.")
                 return None
@@ -50,6 +55,11 @@ def __define_issues(issues_arg: str) -> Optional[List[str]]:
 
 
 def __validate_exclude_list(exclude_list: List[str]) -> List[str]:
+    """
+    Returns the list of invalid sections to exclude.
+    :param exclude_list: List of sections to check for being valid
+    :return: List of invalid sections
+    """
     return [exclude for exclude in exclude_list if exclude not in __EXCLUDE_SECTIONS]
 
 
@@ -58,6 +68,8 @@ if __name__ == "__main__":
 
     args = __parse_arguments()
     project = args.project
+
+    # If GitHub repository and credentiols are specified
     if args.github:
         github = args.github
         if args.credentials is None:
@@ -67,8 +79,12 @@ if __name__ == "__main__":
             exit(-1)
         else:
             github_credentials = utils.define_github_credentials(args.credentials)
+
+    # If the list of bots is specified
     if args.bots:
         bots = utils.split_and_strip(args.bots, ',')
+
+    # If the list of sections to exclude is specified
     if args.exclude:
         exclude = utils.split_and_strip(args.exclude, ',')
         invalid_sections = __validate_exclude_list(exclude)
@@ -78,7 +94,10 @@ if __name__ == "__main__":
         elif len(exclude) == 7:
             print("All sections are excluded. Aborting...")
             exit(0)
+
     issues = __define_issues(args.issues)
+    # If the list of issues passed is invalid (e.g. they are passed as an empty string
+    # or string containing invalid characters.
     if not issues:
         print("Aborting...")
         exit(-1)
