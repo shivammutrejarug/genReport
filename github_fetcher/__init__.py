@@ -43,11 +43,8 @@ class GitHubFetcher:
         """
         path = os.path.join(self.savedir_commits, "all.json")
         if not os.path.isfile(path):
-            print("\t\tCommits are not cached. Fetching...")
             commits = self.fetch_commits()
-            print("\t\tSuccessfully fetched fommits")
         else:
-            print("\t\tCommits are cached. Loading...")
             commits = utils.load_json(path)
         if issue_key:
             prefix = issue_key + ':'

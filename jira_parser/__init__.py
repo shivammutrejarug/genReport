@@ -1,16 +1,16 @@
 import os
 import traceback
-
 from jira.client import JIRA
-from typing import List, Optional
-
+from typing import List, Tuple, Optional
 import utils
+
+from github_fetcher import GitHubFetcher
 
 APACHE_JIRA_SERVER = "https://issues.apache.org/jira/"
 
 
 class JiraParser:
-    def __init__(self, jira_project: str):
+    def __init__(self, jira_project: str, github_repository: str = None, github_credentials: Tuple[str, str] = None):
         self.jira = JIRA(server=APACHE_JIRA_SERVER)
         self.project = jira_project
         self.project_dir = os.path.join("Projects", self.project)
@@ -27,6 +27,10 @@ class JiraParser:
                       "updated," \
                       "project," \
                       "creator"
+        self.github = None
+        if github_repository and github_credentials:
+            self.github = GitHubFetcher(jira_project, github_repository.replace("https://github.com/", ""),
+                                        github_credentials)
 
     def fetch_issues_raw(self, block_index: int = 0, save: bool = True) -> List[dict]:
         """
@@ -211,8 +215,7 @@ class JiraParser:
             issue = utils.load_json(path)
         return issue
 
-    @staticmethod
-    def __prepare_json_object(issue: dict) -> dict:
+    def __prepare_json_object(self, issue: dict) -> dict:
         """
         Prepare a dictionary containing the following data:
         {
@@ -322,5 +325,10 @@ class JiraParser:
             }
             for comment in fields["comment"]["comments"]
         ]
+
+        json_object["pull_requests"], json_object["commits"] = [], []
+        if self.github:
+            json_object["pull_requests"] = self.github.get_pull_requests(issue["key"])
+            json_object["commits"] = self.github.get_commits(issue["key"])
 
         return json_object
