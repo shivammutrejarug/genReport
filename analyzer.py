@@ -308,7 +308,8 @@ if __name__ == "__main__":
 
     try:
         parser = JiraParser(project, github_repository, github_credentials)
-        parser.fetch_issues_raw()
+        parser.fetch_issues_raw()  # This is the assumption that the issues are not fetched.
+
         # While parsing issues, the program may fail to access GitHub repository or to use credentials provided.
         parser.parse_issues()
     except UnknownObjectException:
