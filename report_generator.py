@@ -56,6 +56,7 @@ def __define_github_credentials(credentials: str) -> Tuple[str, str]:
         exit(-1)
     return credentials[0], credentials[1]
 
+
 def __validate_exclude_list(exclude_list: List[str]) -> List[str]:
     return [exclude for exclude in exclude_list if exclude not in __EXCLUDE_SECTIONS]
 
