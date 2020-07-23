@@ -47,10 +47,24 @@ class ReportGenerator:
 
     @staticmethod
     def __hyperlink(url, description):
+        """
+        Construct a LaTeX hyperref from the URL and its description provided.
+        :param url: URL address
+        :param description: URL description
+        :return: Raw string representing hyperref
+        """
         description = escape_latex(description)
         return NoEscape(r"\href{" + url + r"}{\underline{" + description + "}}")
 
     def __load_issue(self) -> Tuple[dict, List[dict]]:
+        """
+        Load the issue specified by the field "issue_key" and a list of connected issues. For each issue, comments
+        left by bots are filtered out and all '\r' symbols are replaced with '\n' to prevent LaTeX errors of
+        empty newlines.
+        :return: Tuple representing:
+            1. Issue specified by the field "issue_key"
+            2. List of connected issues
+        """
         parser = JiraParser(self.project)
         issue = parser.load_issue(self.issue_key)
         issue["comments"] = list(
@@ -76,7 +90,12 @@ class ReportGenerator:
 
         return issue, connected_issues
 
-    def __load_commits(self):
+    def __load_commits(self) -> dict:
+        """
+        Load commits for the issue specified by the field "issue_key". Loaded commits represent
+        a dictionary, where the key is an issue key and value is a list of related commits.
+        :return: Dictionary of lists of commits accessible by an issue key
+        """
         print("\t{}: loading commits".format(self.issue_key))
         issue, connected_issues = self.data
         issue_keys = [issue["issue_key"]] + [connected_issue["issue_key"] for connected_issue in connected_issues]
@@ -90,6 +109,11 @@ class ReportGenerator:
         return commits
 
     def __load_pull_requests(self):
+        """
+        Load pull requests for the issue specified by the field "issue_key". Loaded pull requests represent
+        a dictionary, where the key is an issue key and value is a list of related pull requests.
+        :return: Dictionary of lists of pull requests accessible by an issue key
+        """
         print("\t{}: loading pull requests".format(self.issue_key))
         issue, connected_issues = self.data
         issue_keys = [issue["issue_key"]] + [connected_issue["issue_key"] for connected_issue in connected_issues]
@@ -102,7 +126,11 @@ class ReportGenerator:
         print("\t{}: successfully loaded pull requests".format(self.issue_key))
         return pull_requests
 
-    def __setup_packages(self):
+    def __setup_packages(self) -> None:
+        """
+        Setup required LaTeX packages.
+        :return: None
+        """
         packages = self.doc.packages
         packages.append(Package("a4wide"))
         packages.append(Package("listings"))
@@ -112,7 +140,11 @@ class ReportGenerator:
         packages.append(Package("hyperref"))
         packages.append(Package("spverbatim"))
 
-    def __setup_preamble(self):
+    def __setup_preamble(self) -> None:
+        """
+        Setup preamble of the LaTeX document.
+        :return: None
+        """
         preamble = self.doc.preamble
         issue = self.data[0]
         preamble.append(NoEscape(r"\UseRawInputEncoding"))
@@ -133,7 +165,12 @@ class ReportGenerator:
                                                    r"numberstyle = \tiny")))
         preamble.append(NoEscape(r"\definecolor{darkgreen}{rgb}{0,0.6,0}"))
 
-    def __add_comments(self, issue):
+    def __add_comments(self, issue: dict) -> None:
+        """
+        Add comments for the specified issue. Each comment has the author and the body.
+        :param issue: Issue represented as dictionary
+        :return: None
+        """
         doc = self.doc
         filtered_comments = [comment for comment in issue["comments"] if comment["author"] not in self.bots]
         if not filtered_comments:
@@ -144,7 +181,19 @@ class ReportGenerator:
                     comment_body = utils.escape_with_listings(comment["body"])
                     enum.add_item(bold(comment["author"] + ": ") + comment_body)
 
-    def __describe_issue(self, issue, root_issue: bool = False):
+    def __describe_issue(self, issue, root_issue: bool = False) -> None:
+        """
+        Describe the issue passed in the following form:
+            1. Summary
+            2. Description
+            3. Attachments
+            4. Commits
+            5. Comments
+            6. Pull requests
+        :param issue: Issue represented as a dictionary
+        :param root_issue: Whether the issue passed is the root (not a connected) issue of the document
+        :return: None
+        """
         doc = self.doc
         chapter_title = ("Root issue " if root_issue else "Connected issue ") + issue["issue_key"]
         with doc.create(Chapter(chapter_title)):
@@ -168,6 +217,8 @@ class ReportGenerator:
                             for attachment in issue["attachments"]:
                                 enum.add_item(self.__hyperlink(attachment["content"], attachment["filename"]))
 
+            # Each commit is described in the following way:
+            # "Commit <short_SHA> by <author> (<date>): <commit_message>"
             if self.commits and "commits" not in self.exclude:
                 with doc.create(Section("Commits")):
                     issue_key = issue["issue_key"]
@@ -183,10 +234,20 @@ class ReportGenerator:
                                     escape_latex(commit["date"]),
                                     escape_latex(commit["message"])
                                 )))
+
             if "comments" not in self.exclude:
                 with doc.create(Section("Comments")):
                     self.__add_comments(issue)
 
+            # Each pull request is described in the following way:
+            # Title: <pr_title>
+            # Author: <pr_author>
+            # Date: <pr_date>
+            # Status: <pr_status>
+            # Comments: [
+            #   <comment_author> (<comment_date>): <comment_body>
+            #   ...
+            # ]
             if self.pull_requests and "pull_requests" not in self.exclude:
                 with doc.create(Section("Pull requests")):
                     issue_key = issue["issue_key"]
@@ -212,11 +273,16 @@ class ReportGenerator:
                                                 escape_latex(comment["body"].replace('\r', '\n')))
                                             ))
 
-    def generate_report(self):
+    def generate_report(self) -> None:
+        """
+        Generate PDF report for the issue specified by the field "issue_key".
+        :return: None
+        """
         doc = self.doc
         root_issue, connected_issues = self.data
         filename = root_issue["issue_key"]
         doc.append(NoEscape(r"\maketitle"))
+        doc.append(NoEscape(r"\tableofcontents"))
 
         self.__describe_issue(root_issue, root_issue=True)
 
