@@ -43,6 +43,7 @@ class JiraParser:
         :param save: Whether to persist issues in JSON format
         :return: List of issues as dictionaries
         """
+        print("{}: fetching issues. This may take a while".format(self.project))
         issues = []
         block_size = 100
         while True:
@@ -166,6 +167,7 @@ class JiraParser:
         loaded from the cache
         :return: List of dictionaries of parsed issues
         """
+        print("{}: parsing issues. This may take a while".format(self.project))
         count = 0
         issues_dir = self.issues_dir
         utils.create_dir_if_necessary(issues_dir)
