@@ -250,7 +250,10 @@ def __make_plot(project: str, plots_dir: str,
     plt.xlabel("Issue IDs")
     plt.ylabel("Frequency of {}".format(param_title))
     plt.title("Changes in frequency of {} through the evolution of the project {}".format(param_title, project))
-    plt.savefig(os.path.join(plots_dir, param_title + ".png"), bbox_inches='tight')
+    path = os.path.join(plots_dir, param_title + ".png")
+    if os.path.isfile(path):
+        os.remove(path)
+    plt.savefig(path, bbox_inches='tight')
     plt.close()
 
 
