@@ -331,7 +331,9 @@ class JiraParser:
         # Pull requests and commits
         json_object["pull_requests"], json_object["commits"] = [], []
         if self.github:
+            print("\t{}: loading pull requests. If not cached, this may take a while".format(self.project))
             json_object["pull_requests"] = self.github.get_pull_requests(issue["key"])
+            print("\t{}: loading commits. If not cached, this may take a while".format(self.project))
             json_object["commits"] = self.github.get_commits(issue["key"])
 
         return json_object
