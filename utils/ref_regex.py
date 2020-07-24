@@ -29,6 +29,8 @@ def extract_urls(text: str, project: str, filter_svn_revisions=True, filter_issu
     :param filter_issues: Whether to filter other issues links
     :return: Set of extracted URLs
     """
+    if not text:
+        return set()
     text = clear_text(text)
     # Some characters still remain in the URL after extraction, although they are not expected to be there, so we
     # remove them beforehand.
@@ -77,6 +79,8 @@ def extract_issues(text: str, project_name: str) -> Set[str]:
     :param project_name: Name of the project to match issue IDs
     :return: List of issue IDs
     """
+    if not text:
+        return set()
     issue_matcher = re.compile("{}-{}".format(project_name, r'\d+'))
     return set(issue_matcher.findall(text))
 
@@ -87,6 +91,8 @@ def extract_revisions(text: str) -> Set[str]:
     :param text: Text to extract revisions IDs from
     :return: List containing extracted revision IDs
     """
+    if not text:
+        return set()
     return set(svn_revision_matcher.findall(text) + git_commit_matcher.findall(text))
 
 
@@ -96,6 +102,8 @@ def extract_numbers(text: str) -> List[int]:
     :param text: Text to extract numbers from
     :return: List of strings containing a single number each
     """
+    if not text:
+        return []
     return list(
         map(
             lambda number: int(number),
@@ -117,6 +125,8 @@ def clear_text(text: str) -> str:
     :param text: Text to remove characters from
     :return: Cleared text
     """
+    if not text:
+        return ""
     chars_to_remove = [r'\n', '[', ']', '<', '>', '\\', "\""]
     for char in chars_to_remove:
         text = text.replace(char, ' ')
