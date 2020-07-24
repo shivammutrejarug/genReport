@@ -14,7 +14,7 @@ def __parse_arguments() -> argparse.Namespace:
     arg_parser.add_argument("-i", "--issues", help="Issues to generate reports for, separated by comma and/or"
                                                    "defined as ranges. For example, \"124,136-152,174\"", required=True)
     arg_parser.add_argument("-g", "--github", help="Target Jira project's GitHub repository")
-    arg_parser.add_argument("-c", "--credentials", help="GitHub username and pasword separated by comma."
+    arg_parser.add_argument("-c", "--credentials", help="GitHub username and password separated by comma. "
                                                         "Compulsory if GitHub repository is specified")
     arg_parser.add_argument("-b", "--bots", help="List of bots to exclude from report, separated by comma")
     arg_parser.add_argument("-e", "--exclude", help="Sections to skip when generating report, separated by comma."
