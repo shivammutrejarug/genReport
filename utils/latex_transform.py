@@ -66,7 +66,6 @@ def escape_listings(string: str, to_latex: bool = True) -> Tuple[str, List[Tuple
         if not listing:
             break
         content = listing.group(0)
-        print("This is content", content)
         key = "<<!PDFGENCODE{}!>>".format(listing_index)
         listing_index += 1
         string = string.replace(content, key)
@@ -78,19 +77,18 @@ def escape_listings(string: str, to_latex: bool = True) -> Tuple[str, List[Tuple
             # original text, there is a newline character, and PyLaTeX escapes it with a "\newline" command.
             # It is forbidden to include it after environments which are not fit right into the text.
             language = re.search(r"{code:((?s).*?)}", content)
-            print("This is lang", language)
+
             if language:
                 section = language.group(0)
-                print("This is section", section)
+
                 language = language.group(1)
                 lang_spec = r"[language=" + language + r"]" if language.isalpha() else ""
                 content = content.replace(section, r"\begin{lstlisting}" + lang_spec, 1)
             else:
                 content = content.replace(r"{code}", r"\begin{lstlisting}", 1)
             content = content.replace(r"{code}", r"\end{lstlisting} \ ", 1)
-        print("TYPE of content", type(content))
+
         if len(content) > 500:
-            print("This is the length of content", len(content))
             lines = content.split(' \n') #This needs to be fixed. If can't be made generic, let's accept org name from genreport. 
 
             for line in lines:
@@ -102,7 +100,6 @@ def escape_listings(string: str, to_latex: bool = True) -> Tuple[str, List[Tuple
                     content = '\n'.join(line[i:i + 400] for i in range(0, len(line), 400))
             '\n'.join(lines)
         listings.append((key, content))
-        print("This is string", string)
     return string, listings
 
 

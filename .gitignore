@@ -152,4 +152,4 @@ utils/__pycache__/
 .idea/vcs.xml
 .idea/workspace.xml
 #Reports
-./Reports/*
+Reports/

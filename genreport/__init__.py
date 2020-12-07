@@ -68,7 +68,6 @@ class ReportGenerator:
         """
         parser = JiraParser(self.project)
         issue = parser.load_issue(self.issue_key)
-        print(issue['description'])
         issue["comments"] = list(
             filter(
                 lambda comment: not comment["author"] in self.bots,
@@ -76,7 +75,6 @@ class ReportGenerator:
             )
         )
         for comment in issue["comments"]:
-            print("Read the comment", comment)
             comment["body"] = comment["body"].replace('\r', '\n').replace('\xa0', '')
 
         connected_issues_keys = [connected_issue["issue_key"] for connected_issue in issue["issuelinks"]]
