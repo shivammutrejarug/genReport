@@ -7,6 +7,7 @@ import utils
 from github_fetcher import GitHubFetcher
 from jira_parser import JiraParser
 from typing import Tuple, List
+import pdflatex
 
 
 class ReportGenerator:
@@ -67,6 +68,7 @@ class ReportGenerator:
         """
         parser = JiraParser(self.project)
         issue = parser.load_issue(self.issue_key)
+        print(issue['description'])
         issue["comments"] = list(
             filter(
                 lambda comment: not comment["author"] in self.bots,
@@ -74,7 +76,7 @@ class ReportGenerator:
             )
         )
         for comment in issue["comments"]:
-            comment["body"] = comment["body"].replace('\r', '\n')
+            comment["body"] = comment["body"].replace('\r', '\n').replace('\xa0', '')
 
         connected_issues_keys = [connected_issue["issue_key"] for connected_issue in issue["issuelinks"]]
         connected_issues = [parser.load_issue(key) for key in connected_issues_keys]
@@ -86,8 +88,8 @@ class ReportGenerator:
                 )
             )
             for comment in connected_issue["comments"]:
-                comment["body"] = comment["body"].replace('\r', '\n')
-
+                comment["body"] = comment["body"].replace('\r', '\n').replace('\xa0', '')
+        # print(connected_issues[0].get('description', ''))
         return issue, connected_issues
 
     def __load_commits(self) -> dict:
@@ -162,6 +164,7 @@ class ReportGenerator:
                                                    r"basicstyle = \footnotesize \ttfamily,"
                                                    r"frame = single,"
                                                    r"breaklines = true,"
+                                                   r"literate = {\$}{{\textcolor{blue}{\$}}}1,"
                                                    r"numberstyle = \tiny")))
         preamble.append(NoEscape(r"\definecolor{darkgreen}{rgb}{0,0.6,0}"))
 
@@ -205,6 +208,7 @@ class ReportGenerator:
             if "description" not in self.exclude:
                 with doc.create(Section("Description")):
                     description = utils.escape_with_listings(issue["description"])
+                    print("This is the description after esacping", description)
                     doc.append(description)
 
             if "attachments" not in self.exclude:
@@ -291,6 +295,6 @@ class ReportGenerator:
                 self.__describe_issue(issue)
 
         utils.create_dir_if_necessary("Reports")
-        doc.generate_pdf(os.path.join("Reports", filename), clean_tex=True)
+        doc.generate_pdf(os.path.join("Reports", filename), clean_tex=True, compiler='pdflatex')
 
         print("{}: report is successfully created\n".format(root_issue["issue_key"]))
