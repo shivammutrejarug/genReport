@@ -1,0 +1,623 @@
+\documentclass{report}%
+\usepackage[T1]{fontenc}%
+\usepackage[utf8]{inputenc}%
+\usepackage{lmodern}%
+\usepackage{textcomp}%
+\usepackage{lastpage}%
+\usepackage{a4wide}%
+\usepackage{listings}%
+\usepackage{xcolor}%
+\usepackage{courier}%
+\usepackage{tabularx}%
+\usepackage{hyperref}%
+\usepackage{spverbatim}%
+%
+\UseRawInputEncoding%
+\title{HBASE{-}22041}%
+\author{xiaoheipangzi}%
+\date{2019{-}03{-}12}%
+\lstset{tabsize = 4,showstringspaces = false,numbers = left,commentstyle = \color{darkgreen} \ttfamily,keywordstyle = \color{blue} \ttfamily,stringstyle = \color{red} \ttfamily,rulecolor = \color{black} \ttfamily,basicstyle = \footnotesize \ttfamily,frame = single,breaklines = true,literate = {\$}{{\textcolor{blue}{\$}}}1,numberstyle = \tiny}%
+\definecolor{darkgreen}{rgb}{0,0.6,0}%
+%
+\begin{document}%
+\normalsize%
+\maketitle%
+\tableofcontents%
+\chapter{Root issue HBASE{-}22041}%
+\label{chap:RootissueHBASE{-}22041}%
+\section{Summary}%
+\label{sec:Summary}%
+{[}k8s{]} The crashed node exists in onlineServer forever, and if it holds the meta data, master will start up hang.
+
+%
+\section{Description}%
+\label{sec:Description}%
+while master fresh boot, we~ crash (kill{-} 9) the RS who hold meta. we find that the master startup fails and print~ thounds of logs like:\newline%
+\begin{lstlisting}[language=java]
+2019-03-13 01:09:54,896 WARN [RSProcedureDispatcher-pool4-t1] procedure.RSProcedureDispatcher: request to server hadoop14,16020,1552410583724 failed due to java.net.ConnectException: Call to hadoop14/172.16.1.131:16020 failed on connection exception: org.apache.hbase.thirdparty.io.netty.channel.AbstractChannel$AnnotatedConnectException: syscall:getsockopt(..) fail
+ed: Connection refused: hadoop14/172.16.1.131:16020, try=0, retrying...
+2019-03-13 01:09:55,004 WARN [RSProcedureDispatcher-pool4-t2] procedure.RSProcedureDispatcher: request to server hadoop14,16020,1552410583724 failed due to org.apache.hadoop.hbase.ipc.FailedServerException: Call to hadoop14/172.16.1.131:16020 failed on local exception: org.apache.hadoop.hbase.ipc.FailedServerException: This se
+rver is in the failed servers list: hadoop14/172.16.1.131:16020, try=1, retrying...
+2019-03-13 01:09:55,114 WARN [RSProcedureDispatcher-pool4-t3] procedure.RSProcedureDispatcher: request to server hadoop14,16020,1552410583724 failed due to org.apache.hadoop.hbase.ipc.FailedServerException: Call to hadoop14/172.16.1.131:16020 failed on local exception: org.apache.hadoop.hbase.ipc.FailedServerExcept
+ion: This server is in the failed servers list: hadoop14/172.16.1.131:16020, try=2, retrying...
+2019-03-13 01:09:55,219 WARN [RSProcedureDispatcher-pool4-t4] procedure.RSProcedureDispatcher: request to server hadoop14,16020,1552410583724 failed due to org.apache.hadoop.hbase.ipc.FailedServerException: Call to hadoop14/172.16.1.131:16020 failed on local exception: org.apache.hadoop.hbase.ipc.Failed
+ServerException: This server is in the failed servers list: hadoop14/172.16.1.131:16020, try=3, retrying...
+2019-03-13 01:09:55,324 WARN [RSProcedureDispatcher-pool4-t5] procedure.RSProcedureDispatcher: request to server hadoop14,16020,1552410583724 failed due to org.apache.hadoop.hbase.ipc.FailedServerException: Call to hadoop14/172.16.1.131:16020 failed on local exception: org.apache.hadoop.hbas
+e.ipc.FailedServerException: This server is in the failed servers list: hadoop14/172.16.1.131:16020, try=4, retrying...
+2019-03-13 01:09:55,428 WARN [RSProcedureDispatcher-pool4-t6] procedure.RSProcedureDispatcher: request to server hadoop14,16020,1552410583724 failed due to org.apache.hadoop.hbase.ipc.FailedServerException: Call to hadoop14/172.16.1.131:16020 failed on local exception: org.apache
+.hadoop.hbase.ipc.FailedServerException: This server is in the failed servers list: hadoop14/172.16.1.131:16020, try=5, retrying...
+2019-03-13 01:09:55,533 WARN [RSProcedureDispatcher-pool4-t7] procedure.RSProcedureDispatcher: request to server hadoop14,16020,1552410583724 failed due to org.apache.hadoop.hbase.ipc.FailedServerException: Call to hadoop14/172.16.1.131:16020 failed on local exception
+: org.apache.hadoop.hbase.ipc.FailedServerException: This server is in the failed servers list: hadoop14/172.16.1.131:16020, try=6, retrying...
+2019-03-13 01:09:55,638 WARN [RSProcedureDispatcher-pool4-t8] procedure.RSProcedureDispatcher: request to server hadoop14,16020,1552410583724 failed due to org.apache.hadoop.hbase.ipc.FailedServerException: Call to hadoop14/172.16.1.131:16020 failed on loc
+al exception: org.apache.hadoop.hbase.ipc.FailedServerException: This server is in the failed servers list: hadoop14/172.16.1.131:16020, try=7, retrying...
+2019-03-13 01:09:55,755 WARN [RSProcedureDispatcher-pool4-t9] procedure.RSProcedureDispatcher: request to server hadoop14,16020,1552410583724 failed due to org.apache.hadoop.hbase.ipc.FailedServerException: Call to hadoop14/172.16.1.131:16020 f
+ailed on local exception: org.apache.hadoop.hbase.ipc.FailedServerException: This server is in the failed servers list: hadoop14/172.16.1.131:16020, try=8, retrying...
+
+\end{lstlisting} \ 
+
+%
+\section{Attachments}%
+\label{sec:Attachments}%
+\begin{enumerate}%
+\item%
+\href{https://issues.apache.org/jira/secure/attachment/12962095/bug.zip}{\underline{bug.zip}}%
+\item%
+\href{https://issues.apache.org/jira/secure/attachment/13003680/hbasemaster.log}{\underline{hbasemaster.log}}%
+\item%
+\href{https://issues.apache.org/jira/secure/attachment/12962093/normal.zip}{\underline{normal.zip}}%
+\end{enumerate}
+
+%
+\section{Comments}%
+\label{sec:Comments}%
+\begin{enumerate}%
+\item%
+\textbf{xiaoheipangzi: }We have four machine, HMaster is hadoop11, the RegionServers are :hadoop12,hadoop13,hadoop14.\newline%
+\newline%
+\newline%
+\newline%
+When we start master, who is on a busy machine. So thethe RegionServerTracker\#refresh become slow. BeforeRegionServerTracker\#refresh detect the hadoop14 join the cluster, hadoop14 crash, but hadoop14 is aleardy added to ServerManager\#onlineSever(see below log\#3). So even hadoop14 crashes, it exist in onlineServer for ever.\newline%
+\newline%
+\begin{lstlisting}[language=java]
+
+
+1 master.ServerManager: Registering regionserver=hadoop14,16020,1552410583724
+
+ 2 master.ServerManager: Registering regionserver=hadoop12,16020,1552410578454
+
+ 3 master.ServerManager: Registering regionserver=hadoop13,16020,1552410566504
+
+ 4 zookeeper.MetaTableLocator: Setting hbase:meta (replicaId=0) location in ZooKeeper as hadoop14,16020,1552410583724
+
+
+
+ 5 m
+aster.RegionServerTracker: RegionServer ephemeral node created, adding [hadoop12,16020,1552410578454]
+
+ 6 master.RegionServerTracker: RegionServer ephemeral node created, adding [hadoop13,16020,1552410566504]
+
+ 7 procedure.RSProcedureDispatcher: request to server hadoop14,16020,1552410583724 failed due to java.net.ConnectException: Call to hadoop14/172.16.1.131:16020 failed on connection exception
+: org.apache.hbase.thirdparty.io.netty.channel.AbstractChannel$AnnotatedConnectException: syscall:getsockopt(..) failed: Connection refused: hadoop14/172.16.1.131:16020, try=0, retrying...
+
+
+
+\end{lstlisting} \ \newline%
+\newline%
+\newline%
+\newline%
+\newline%
+\newline%
+This can cause the master hangs and print log forever, if hadoop14 hold the meta table.\newline%
+\newline%
+\newline%
+\newline%
+Seeorg.apache.hadoop.hbase.master.procedure.RSProcedureDispatcher.ExecuteProceduresRemoteCall.run\newline%
+\newline%
+\begin{lstlisting}[language=java]
+
+1 try {
+
+2   sendRequest(getServerName(), request.build());
+
+3 } catch (IOException e) {
+
+4   e = unwrapException(e);
+
+5   // TODO: In the future some operation may want to bail out early.
+
+6   // TODO: How many times should we retry (use numberOfAttemptsSoFar)
+
+7   if (!scheduleForRetry(e)) {
+
+8     remoteCallFailed(procedureEnv, e);
+
+9   }
+
+10 }
+
+\end{lstlisting} \ \newline%
+\newline%
+master will sendReust to hadoop14 and fails, so it will callscheduleForRetry to retry , and inscheduleForRetry , master will check whether hadoop14 is inonlineServers , if is, retry, hence master will retry forever and print thousands of logs like log \#7.\newline%
+\newline%
+\newline%
+\newline%
+%
+\item%
+\textbf{xiaoheipangzi: }{[}\textasciitilde{}Apache9{]} and {[}\textasciitilde{}allan163{]}\newline%
+\newline%
+\newline%
+\newline%
+Could please see this issue and give somesuggestion to fix it?\newline%
+\newline%
+\newline%
+\newline%
+My personal option is give athreshold for numberOfAttemptsSoFar(like the TODO in above code).\newline%
+\newline%
+\newline%
+\newline%
+Thanks.%
+\item%
+\textbf{stack: }Does the Master not get notice of hadoop14 expiring so it can run a ServerCrashProcedure for it? Thanks.%
+\item%
+\textbf{stack: }Looking in log, this looks to be HBase 3.0.0{-}SNAPSHOT .... master branch build?%
+\item%
+\textbf{timoha: }We are seeing the same issue on 2.2.4 running in kubernetes. The issue appears to be do to with the fact that address of failed regionserver keeps getting readded to failed servers list when RSProcedureDispatcher.sendRequest is called.\newline%
+\newline%
+\newline%
+\newline%
+Here's with TRACE logging enabled:\newline%
+\newline%
+\begin{lstlisting}[language=java]
+
+2020-05-18 17:52:19,643 TRACE [RSProcedureDispatcher-pool3-t127] procedure.RSProcedureDispatcher: Building request with operations count=1
+
+2020-05-18 17:52:19,644 DEBUG [RSProcedureDispatcher-pool3-t127] ipc.AbstractRpcClient: Not trying to connect to regionserver-1.hbase.hbase.svc.cluster.local/10.128.9.13:16020 this server is in the failed servers list
+
+2020-0
+5-18 17:52:19,644 TRACE [RSProcedureDispatcher-pool3-t127] ipc.AbstractRpcClient: Call: ExecuteProcedures, callTime: 0ms
+
+2020-05-18 17:52:19,644 DEBUG [RSProcedureDispatcher-pool3-t127] procedure.RSProcedureDispatcher: request to regionserver-1.hbase.hbase.svc.cluster.local,16020,1589824187906 failed, try=1474
+
+org.apache.hadoop.hbase.ipc.FailedServerException: Call to regionserver-1.hbase.hbase.
+svc.cluster.local/10.128.9.13:16020 failed on local exception: org.apache.hadoop.hbase.ipc.FailedServerException: This server is in the failed servers list: regionserver-1.hbase.hbase.svc.cluster.local/10.128.9.13:16020
+
+ at sun.reflect.GeneratedConstructorAccessor13.newInstance(Unknown Source)
+
+ at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45
+)
+
+ at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+
+ at org.apache.hadoop.hbase.ipc.IPCUtil.wrapException(IPCUtil.java:220)
+
+ at org.apache.hadoop.hbase.ipc.AbstractRpcClient.onCallFinished(AbstractRpcClient.java:392)
+
+ at org.apache.hadoop.hbase.ipc.AbstractRpcClient.access$100(AbstractRpcClient.java:97)
+
+ at org.apache.hadoop.hbase.ipc.AbstractRpcClient$3.run(AbstractRpcClien
+t.java:423)
+
+ at org.apache.hadoop.hbase.ipc.AbstractRpcClient$3.run(AbstractRpcClient.java:419)
+
+ at org.apache.hadoop.hbase.ipc.Call.callComplete(Call.java:117)
+
+ at org.apache.hadoop.hbase.ipc.Call.setException(Call.java:132)
+
+ at org.apache.hadoop.hbase.ipc.AbstractRpcClient.callMethod(AbstractRpcClient.java:436)
+
+ at org.apache.hadoop.hbase.ipc.AbstractRpcClient.callBlockingMethod(AbstractRpc
+Client.java:330)
+
+ at org.apache.hadoop.hbase.ipc.AbstractRpcClient.access$200(AbstractRpcClient.java:97)
+
+ at org.apache.hadoop.hbase.ipc.AbstractRpcClient$BlockingRpcChannelImplementation.callBlockingMethod(AbstractRpcClient.java:585)
+
+ at org.apache.hadoop.hbase.shaded.protobuf.generated.AdminProtos$AdminService$BlockingStub.executeProcedures(AdminProtos.java:31006)
+
+ at org.apache.hadoop.hbase
+.master.procedure.RSProcedureDispatcher$ExecuteProceduresRemoteCall.sendRequest(RSProcedureDispatcher.java:349)
+
+ at org.apache.hadoop.hbase.master.procedure.RSProcedureDispatcher$ExecuteProceduresRemoteCall.run(RSProcedureDispatcher.java:314)
+
+ at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+
+ at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecu
+tor.java:624)
+
+ at java.lang.Thread.run(Thread.java:748)
+
+Caused by: org.apache.hadoop.hbase.ipc.FailedServerException: This server is in the failed servers list: regionserver-1.hbase.hbase.svc.cluster.local/10.128.9.13:16020
+
+ at org.apache.hadoop.hbase.ipc.AbstractRpcClient.getConnection(AbstractRpcClient.java:354)
+
+ at org.apache.hadoop.hbase.ipc.AbstractRpcClient.callMethod(AbstractRpcClient.j
+ava:433)
+
+ ... 9 more
+
+2020-05-18 17:52:19,644 WARN [RSProcedureDispatcher-pool3-t127] procedure.RSProcedureDispatcher: request to server regionserver-1.hbase.hbase.svc.cluster.local,16020,1589824187906 failed due to org.apache.hadoop.hbase.ipc.FailedServerException: Call to regionserver-1.hbase.hbase.svc.cluster.local/10.128.9.13:16020 failed on local exception: org.apache.hadoop.hbase.ipc.Failed
+ServerException: This server is in the failed servers list: regionserver-1.hbase.hbase.svc.cluster.local/10.128.9.13:16020, try=1474, retrying...\end{lstlisting} \ \newline%
+\newline%
+In our case it doesn't recover automatically and we have to restart hbase master to get out of this issue.%
+\item%
+\textbf{timoha: }Here's the error that shows that the address is getting readded to failed servers:\newline%
+\newline%
+\begin{lstlisting}[language=java]
+
+2020-05-18 17:52:20,249 TRACE [RSProcedureDispatcher-pool3-t133] procedure.RSProcedureDispatcher: Building request with operations count=1
+
+2020-05-18 17:52:20,249 TRACE [RSProcedureDispatcher-pool3-t133] ipc.NettyRpcConnection: Connecting to regionserver-1.hbase.hbase.svc.cluster.local/10.128.9.13:16020
+
+2020-05-18 17:52:20,254 TRACE [RS-EventLoopGroup-1-1] ipc.
+AbstractRpcClient: Call: ExecuteProcedures, callTime: 5ms
+
+2020-05-18 17:52:20,254 DEBUG [RS-EventLoopGroup-1-1] ipc.FailedServers: Added failed server with address regionserver-1.hbase.hbase.svc.cluster.local/10.128.9.13:16020 to list caused by org.apache.hbase.thirdparty.io.netty.channel.AbstractChannel$AnnotatedConnectException: finishConnect(..) failed: No route to host: regionserver-1.hbase.h
+base.svc.cluster.local/10.128.9.13:16020
+
+2020-05-18 17:52:20,254 DEBUG [RSProcedureDispatcher-pool3-t133] procedure.RSProcedureDispatcher: request to regionserver-1.hbase.hbase.svc.cluster.local,16020,1589824187906 failed, try=1480
+
+2020-05-18 17:52:20,255 WARN [RSProcedureDispatcher-pool3-t133] procedure.RSProcedureDispatcher: request to server regionserver-1.hbase.hbase.svc.cluster.local,16020,
+1589824187906 failed due to java.net.ConnectException: Call to regionserver-1.hbase.hbase.svc.cluster.local/10.128.9.13:16020 failed on connection exception: org.apache.hbase.thirdparty.io.netty.channel.AbstractChannel$AnnotatedConnectException: finishConnect(..) failed: No route to host: regionserver-1.hbase.hbase.svc.cluster.local/10.128.9.13:16020, try=1480, retrying...
+
+ ... 10 more
+
+Caused by
+: java.net.ConnectException: finishConnect(..) failed: No route to host
+
+ ... 6 more
+
+ at org.apache.hbase.thirdparty.io.netty.channel.epoll.AbstractEpollChannel$AbstractEpollUnsafe.finishConnect(AbstractEpollChannel.java:644)
+
+ at org.apache.hbase.thirdparty.io.netty.channel.epoll.AbstractEpollChannel$AbstractEpollUnsafe.doFinishConnect(AbstractEpollChannel.java:667)
+
+ at org.apache.hbase.thirdpa
+rty.io.netty.channel.unix.Socket.finishConnect(Socket.java:269)
+
+ at org.apache.hbase.thirdparty.io.netty.channel.unix.Errors.throwConnectException(Errors.java:112)
+
+Caused by: org.apache.hbase.thirdparty.io.netty.channel.AbstractChannel$AnnotatedConnectException: finishConnect(..) failed: No route to host: regionserver-1.hbase.hbase.svc.cluster.local/10.128.9.13:16020
+
+ at java.lang.Thread.run(Th
+read.java:748)
+
+ at org.apache.hbase.thirdparty.io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+
+ at org.apache.hbase.thirdparty.io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:905)
+
+ at org.apache.hbase.thirdparty.io.netty.channel.epoll.EpollEventLoop.run(EpollEventLoop.java:328)
+
+ at org.apache.hbase.thirdparty.io.nett
+y.channel.epoll.EpollEventLoop.processReady(EpollEventLoop.java:417)
+
+ at org.apache.hbase.thirdparty.io.netty.channel.epoll.AbstractEpollChannel$AbstractEpollUnsafe.epollOutReady(AbstractEpollChannel.java:524)
+
+ at org.apache.hbase.thirdparty.io.netty.channel.epoll.AbstractEpollChannel$AbstractEpollUnsafe.finishConnect(AbstractEpollChannel.java:650)
+
+ at org.apache.hbase.thirdparty.io.netty.chann
+el.epoll.AbstractEpollChannel$AbstractEpollUnsafe.fulfillConnectPromise(AbstractEpollChannel.java:631)
+
+ at org.apache.hbase.thirdparty.io.netty.util.concurrent.DefaultPromise.tryFailure(DefaultPromise.java:114)
+
+ at org.apache.hbase.thirdparty.io.netty.util.concurrent.DefaultPromise.setFailure0(DefaultPromise.java:533)
+
+ at org.apache.hbase.thirdparty.io.netty.util.concurrent.DefaultPromise.setVa
+lue0(DefaultPromise.java:540)
+
+ at org.apache.hbase.thirdparty.io.netty.util.concurrent.DefaultPromise.notifyListeners(DefaultPromise.java:415)
+
+ at org.apache.hbase.thirdparty.io.netty.util.concurrent.DefaultPromise.notifyListenersNow(DefaultPromise.java:474)
+
+ at org.apache.hbase.thirdparty.io.netty.util.concurrent.DefaultPromise.notifyListeners0(DefaultPromise.java:495)
+
+ at org.apache.hbase.th
+irdparty.io.netty.util.concurrent.DefaultPromise.notifyListener0(DefaultPromise.java:502)
+
+ at org.apache.hadoop.hbase.ipc.NettyRpcConnection$3.operationComplete(NettyRpcConnection.java:261)
+
+ at org.apache.hadoop.hbase.ipc.NettyRpcConnection$3.operationComplete(NettyRpcConnection.java:267)
+
+ at org.apache.hadoop.hbase.ipc.NettyRpcConnection.access$500(NettyRpcConnection.java:71)
+
+ at org.apache.h
+adoop.hbase.ipc.NettyRpcConnection.failInit(NettyRpcConnection.java:179)
+
+ at org.apache.hbase.thirdparty.io.netty.channel.DefaultChannelPipeline.fireUserEventTriggered(DefaultChannelPipeline.java:924)
+
+ at org.apache.hbase.thirdparty.io.netty.channel.AbstractChannelHandlerContext.invokeUserEventTriggered(AbstractChannelHandlerContext.java:312)
+
+ at org.apache.hbase.thirdparty.io.netty.channel.Abs
+tractChannelHandlerContext.invokeUserEventTriggered(AbstractChannelHandlerContext.java:326)
+
+ at org.apache.hbase.thirdparty.io.netty.channel.DefaultChannelPipeline$HeadContext.userEventTriggered(DefaultChannelPipeline.java:1426)
+
+ at org.apache.hbase.thirdparty.io.netty.channel.AbstractChannelHandlerContext.fireUserEventTriggered(AbstractChannelHandlerContext.java:304)
+
+ at org.apache.hbase.third
+party.io.netty.channel.AbstractChannelHandlerContext.invokeUserEventTriggered(AbstractChannelHandlerContext.java:312)
+
+ at org.apache.hbase.thirdparty.io.netty.channel.AbstractChannelHandlerContext.invokeUserEventTriggered(AbstractChannelHandlerContext.java:326)
+
+ at org.apache.hadoop.hbase.ipc.BufferCallBeforeInitHandler.userEventTriggered(BufferCallBeforeInitHandler.java:92)
+
+ at org.apache.hado
+op.hbase.ipc.Call.setException(Call.java:132)
+
+ at org.apache.hadoop.hbase.ipc.Call.callComplete(Call.java:117)
+
+ at org.apache.hadoop.hbase.ipc.AbstractRpcClient$3.run(AbstractRpcClient.java:419)
+
+ at org.apache.hadoop.hbase.ipc.AbstractRpcClient$3.run(AbstractRpcClient.java:423)
+
+ at org.apache.hadoop.hbase.ipc.AbstractRpcClient.access$100(AbstractRpcClient.java:97)
+
+ at org.apache.hadoop.hbase.
+ipc.AbstractRpcClient.onCallFinished(AbstractRpcClient.java:392)
+
+ at org.apache.hadoop.hbase.ipc.IPCUtil.wrapException(IPCUtil.java:177)
+
+java.net.ConnectException: Call to regionserver-1.hbase.hbase.svc.cluster.local/10.128.9.13:16020 failed on connection exception: org.apache.hbase.thirdparty.io.netty.channel.AbstractChannel$AnnotatedConnectException: finishConnect(..) failed: No route to host:
+ regionserver-1.hbase.hbase.svc.cluster.local/10.128.9.13:16020\end{lstlisting} \ \newline%
+\newline%
+These errors happen every 2 seconds (which is the default expiry of failed servers)%
+\item%
+\textbf{timoha: }Just reproduced again and I'm seeing ServerCrashProcedure being stuck for the regionserver that it's trying to reconnect to with state=WAITING:SERVER\_CRASH\_FINISH.\newline%
+\newline%
+\newline%
+\newline%
+And, ServerCrashProcedure is waiting for TransitRegionStateProcedure procedure with state=WAITING:REGION\_STATE\_TRANSITION\_CONFIRM\_OPENED.\newline%
+\newline%
+And, TransitRegionStateProcedure is waiting for OpenRegionProcedure procedure with state=RUNNABLE\newline%
+\newline%
+\newline%
+\newline%
+Regions in transition are in OPENNING state for the regionserver that exists.\newline%
+\newline%
+\newline%
+\newline%
+If I'm understanding the logs correctly, it's trying to connect to old IP address for the restarted regionserver. In kubernetes when pod is restarted it gets a new IP address and preserves hostname (if it's a statefulset). So, there's some assumption somewhere in HBase that IP address doesn't change or it caches the IP address resolution. In this particular case it looks like it's trying to correctly assign regions to the online regionserver but still uses old IP address.%
+\item%
+\textbf{stack: }Thanks for the detail {[}\textasciitilde{}timoha{]}. Haven't looked at code yet.\newline%
+\newline%
+\newline%
+\newline%
+We first report it as being in the failed server list and then we start doing  'No route to host'. It starts after the container comes back w/ new IP (looks the same though across textboxes)? What are the dns timeouts on this host? (networkaddress.cache.ttl). We should give up if 'no route to host' for sure.%
+\item%
+\textbf{timoha: }> It starts after the container comes back w/ new IP (looks the same though across textboxes)?\newline%
+\newline%
+\newline%
+\newline%
+Right, the pod starts with new IP address, but for some reason master is still trying to reach old IP address\newline%
+\newline%
+\newline%
+\newline%
+\newline%
+\newline%
+\newline%
+\newline%
+> What are the dns timeouts on this host?\newline%
+\newline%
+\newline%
+\newline%
+We set {-}Dsun.net.inetaddr.ttl=10 option and it seems to work for other places. Is it necessary to set "networkaddress.cache.tt" option as well?%
+\item%
+\textbf{stack: }Can I have more log {[}\textasciitilde{}timoha{]}? The "Here's the error that shows that the address is getting readded to failed servers" seems to be the hbase async dfs client. Looking at the first exception, tracing, an hbase ServerName is passed down, and on RegionServer RPC Channel creation, we use it {-}{-} host and port {-}{-} to create the InetSocketAddress (AsyncConnectionImpl\#createAddr line \#427) which is passed to the AbstractRPCChannel on construction and hardcoded as the client 'address'. On 'No Route To Host', we should throw away the Channel instance instance and create it anew, or catch this and allow addr change during sessions.\newline%
+\newline%
+\newline%
+\newline%
+%
+\item%
+\textbf{timoha: }Attached entire hbasemaster log (hbasemaster.log) with TRACE enabled right before trying to reproduce the issue.\newline%
+\newline%
+\newline%
+\newline%
+The time I've triggered the issue was "Thu May 21 17:28:42 UTC 2020". And the topology looked like so:\newline%
+\newline%
+\begin{spverbatim}
+
+hbasemaster-0 10.128.25.30
+
+hbasemaster-1 10.128.6.51
+regionserver-0 10.128.53.53
+
+regionserver-1 10.128.9.37
+regionserver-2 10.128.14.39\end{spverbatim}\ \newline%
+\newline%
+\newline%
+\newline%
+\newline%
+\newline%
+They way I trigger the issue is by picking a regionserver with 0 regions (because it was restarted recently), triggering "balancer" and killing the regionserver during the execution of balancer. In this case the regionserver I killed was regionserver{-}2. Here's how topology looked like after regionserver 2 came back up:\newline%
+\newline%
+\newline%
+\newline%
+\newline%
+\newline%
+\begin{spverbatim}
+
+hbasemaster-0 10.128.25.30
+
+hbasemaster-1 10.128.6.51
+regionserver-0 10.128.53.53
+
+regionserver-1 10.128.9.37
+regionserver-2 10.128.14.40\end{spverbatim}\ \newline%
+\newline%
+You can see that regionserver{-}2 came back up with IP 10.128.14.40, but hbasemaster still tries to contact 10.128.14.39\newline%
+\newline%
+\newline%
+\newline%
+%
+\item%
+\textbf{stack: }I wonder if we changed the AbstractRPCChannel so that rather than cache an address (InetSocketAddress), instead we just cached the remote ServerName as per https://kubernetes.io/docs/tutorials/stateful{-}application/basic{-}stateful{-}set/. The Pod will come back w/ same 'name' but may have a different IP ("This is why it is important not to configure other applications to connect to Pods in a StatefulSet by IP address."). I think this is what we are doing when we cache an ISA. Let me see.... (Thanks for the logs {[}\textasciitilde{}timoha{]})\newline%
+\newline%
+\newline%
+\newline%
+Oh, I bet HDFS gets confused too... (but maybe not {-}{-} IIRC, it creates' a name to use referring to the DN...) Let me check logs.%
+\item%
+\textbf{timoha: }> Oh, I bet HDFS gets confused too... (but maybe not – IIRC, it creates' a name to use referring to the DN...) Let me check logs.\newline%
+\newline%
+\newline%
+\newline%
+So for hadoop we route clients by hostnames (dfs.client.use.datanode.hostname) and provision a k8s service per datanode which results in a stable IP per datanode. That's a workaround to the bug (https://issues.apache.org/jira/browse/HDFS{-}15250), which I don't think was properly addressed there. Otherwise, we could have just relied on hostnames of the pods without needing a service.\newline%
+(During the pod restart, its hostname is also removed from DNS resulting in UnresolvedHostnameException for clients).\newline%
+\newline%
+\newline%
+\newline%
+The most ideal for hbase on k8s would be to not cache any IPs (stateless connections) and not rely on hostnames (kinda like kafka brokers) but that's probably not easy to change.%
+\item%
+\textbf{zhangduo: }When I implemented an in house RPC framework about ten years ago, my solution was to create an unresolved ISA as the rpc connections key, and once we want to connect to the remote peer, we recreate a resolved one.%
+\item%
+\textbf{stack: }Try changing the HDFS{-}15250 patch so it makes an IOE of UnresolvedAddressException before rethrow? (yeah, what is there doesn't look like a 'fix').\newline%
+\newline%
+\newline%
+\newline%
+Let me see if can undo caching of ISA (but not do resolve per rpc).\newline%
+\newline%
+%
+\item%
+\textbf{stack: }The TRACE{-}level logs really help. Thanks {[}\textasciitilde{}timoha{]}\newline%
+\newline%
+\newline%
+\newline%
+It looks like sun.net.inetaddr.ttl ==  networkaddress.cache.ttl.\newline%
+\newline%
+\newline%
+\newline%
+If set to 10, that might be too long looking at the log.\newline%
+\newline%
+\newline%
+\newline%
+I see this in the log around the time that regionserver{-}2 came back up:\newline%
+\newline%
+\newline%
+\newline%
+\begin{lstlisting}
+
+ 2020-05-21 17:28:55,010 DEBUG [RpcServer.default.FPBQ.Fifo.handler=48,queue=3,port=16000] master.ServerManager: STARTUP: Server regionserver-2.hbase.hbase.svc.cluster.local,16020,1590082132059 came back up, removed it from the dead servers list
+
+\end{lstlisting} \ \newline%
+\newline%
+\newline%
+\newline%
+What above says is that the old server instance, regionserver{-}2.hbase.hbase.svc.cluster.local,16020,1590081637367, has been replaced in the Master by the regionserver{-}2.hbase.hbase.svc.cluster.local,16020,1590082132059 (see the differing timestamps).\newline%
+\newline%
+\newline%
+\newline%
+A little later in the log I see this:\newline%
+\newline%
+\newline%
+\newline%
+\begin{lstlisting}
+
+ 2020-05-21 17:28:55,745 DEBUG [RSProcedureDispatcher-pool3-t31] master.ServerManager: New admin connection to regionserver-2.hbase.hbase.svc.cluster.local,16020,1590082132059
+
+ 2020-05-21 17:28:55,745 TRACE [RSProcedureDispatcher-pool3-t31] ipc.NettyRpcConnection: Connecting to regionserver-2.hbase.hbase.svc.cluster.local/10.128.14.39:16020
+
+...
+
+\end{lstlisting} \ \newline%
+\newline%
+\newline%
+\newline%
+i.e. the ServerManager is processing the 'new' server part of which is setting up a new connection.\newline%
+\newline%
+\newline%
+\newline%
+Logging is a little sparse here but code looks like it should do right thing...... The ServerManager asks to get the admin instance which ends up in here....\newline%
+\newline%
+\newline%
+\newline%
+\begin{lstlisting}
+
+  @Override
+
+  public AdminProtos.AdminService.BlockingInterface getAdmin(ServerName serverName)
+
+      throws IOException {
+
+    checkClosed();
+
+    if (isDeadServer(serverName)) {
+
+      throw new RegionServerStoppedException(serverName + " is dead.");
+
+    }
+
+    String key = getStubKey(AdminProtos.AdminService.BlockingInterface.class.getName(), serverName,
+
+      this.hostn
+amesCanChange);
+
+    return (AdminProtos.AdminService.BlockingInterface) computeIfAbsentEx(stubs, key, () -> {
+
+      BlockingRpcChannel channel =
+
+          this.rpcClient.createBlockingRpcChannel(serverName, user, rpcTimeout);
+
+      return AdminProtos.AdminService.newBlockingStub(channel);
+
+    });
+
+  }
+
+\end{lstlisting} \ \newline%
+\newline%
+\newline%
+\newline%
+The call to getStubKey should be doing a new lookup (hostnamesCanChange defaults true {-}{-} see  HBASE{-}14544) but it is happening at....\textasciitilde{}17:28:55,745.\newline%
+\newline%
+\newline%
+\newline%
+The new server is registered at the Master at \textasciitilde{}17:28:55,010.\newline%
+\newline%
+\newline%
+\newline%
+When did K8S register in DNS the new pod?\newline%
+\newline%
+\newline%
+\newline%
+What happens if you run w/  {-}Dsun.net.inetaddr.ttl=1 instead of 10?\newline%
+\newline%
+\newline%
+\newline%
+\newline%
+\newline%
+\newline%
+\newline%
+\newline%
+\newline%
+\newline%
+\newline%
+%
+\item%
+\textbf{timoha: }> When did K8S register in DNS the new pod?\newline%
+\newline%
+\newline%
+\newline%
+Given the eventually consistent nature of k8s, it's possible that the mapping in DNS is updated after the new regionserver pod has already started. Unfortunately, I can't verify if that's the case as DNS isn't managed by us so I can't add extra logging there. I think for the sake of argument we can assume that the DNS mapping is inconsistent. Although, that could be the case on any infra as DNS can be inconsistent due to caching in multiple places (systemd{-}resolved, intermediate DNS servers, java dns cache, etc) or just operators being slow to update them.\newline%
+\newline%
+\newline%
+\newline%
+> What happens if you run w/ {-}Dsun.net.inetaddr.ttl=1 instead of 10?\newline%
+\newline%
+\newline%
+\newline%
+I was able to reproduce this issue with ttl=1 as well as ttl=0 (which I guess means no caching).%
+\item%
+\textbf{stack: }bq. I was able to reproduce this issue with ttl=1 as well as ttl=0 (which I guess means no caching).\newline%
+\newline%
+\newline%
+\newline%
+Ouch.\newline%
+\newline%
+\newline%
+\newline%
+Any evidence that java process ever notices the DNS update?\newline%
+\newline%
+\newline%
+\newline%
+Next I think would be looking at throwing away the Connection after N retries. We keep trying for ever.... waiting on an SCP.  If can create a new Connection and keep going w/o disrupting any other ongoing RPCs., that sounds like way to go here. Thanks {[}\textasciitilde{}timoha{]}%
+\end{enumerate}
+
+%
+\end{document}

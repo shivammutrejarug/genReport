@@ -66,6 +66,7 @@ def escape_listings(string: str, to_latex: bool = True) -> Tuple[str, List[Tuple
         if not listing:
             break
         content = listing.group(0)
+        print("This is content", content)
         key = "<<!PDFGENCODE{}!>>".format(listing_index)
         listing_index += 1
         string = string.replace(content, key)
@@ -88,15 +89,18 @@ def escape_listings(string: str, to_latex: bool = True) -> Tuple[str, List[Tuple
                 content = content.replace(r"{code}", r"\begin{lstlisting}", 1)
             content = content.replace(r"{code}", r"\end{lstlisting} \ ", 1)
         print("TYPE of content", type(content))
-        lines = content.split(' ') #This needs to be fixed. If can't be made generic, let's accept org name from genreport. 
-        for line in lines:
-            if len(line) > 400:
-                # If the string length is too big, LaTeX throws an error "Dimension too large".
-                # Unfortunately, I couldn't find what is the max dimension, so let's say that typical
-                # line never exceeds 400 characters, and so, after each 400 characters in a line,
-                # a newline character is inserted.
-                content = '\n'.join(line[i:i + 400] for i in range(0, len(line), 400))
-        '\n'.join(lines)
+        if len(content) > 500:
+            print("This is the length of content", len(content))
+            lines = content.split(' \n') #This needs to be fixed. If can't be made generic, let's accept org name from genreport. 
+
+            for line in lines:
+                if len(line) > 400:
+                    # If the string length is too big, LaTeX throws an error "Dimension too large".
+                    # Unfortunately, I couldn't find what is the max dimension, so let's say that typical
+                    # line never exceeds 400 characters, and so, after each 400 characters in a line,
+                    # a newline character is inserted.
+                    content = '\n'.join(line[i:i + 400] for i in range(0, len(line), 400))
+            '\n'.join(lines)
         listings.append((key, content))
         print("This is string", string)
     return string, listings
@@ -109,7 +113,7 @@ def escape_with_listings(string: str) -> NoEscape:
     :param string: String containing text without escaping and with Atlassian code listings
     :return: Formatted string
     """
-    string = string.replace("\r\n", '\n')
+    string = string.replace('\r\n', '\n').replace(' \n', '')
     string, extracted_listing_blocks = escape_listings(string)
     string, extracted_noformat_blocks = escape_noformat(string)
 

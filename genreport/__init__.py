@@ -76,6 +76,7 @@ class ReportGenerator:
             )
         )
         for comment in issue["comments"]:
+            print("Read the comment", comment)
             comment["body"] = comment["body"].replace('\r', '\n').replace('\xa0', '')
 
         connected_issues_keys = [connected_issue["issue_key"] for connected_issue in issue["issuelinks"]]
@@ -89,7 +90,7 @@ class ReportGenerator:
             )
             for comment in connected_issue["comments"]:
                 comment["body"] = comment["body"].replace('\r', '\n').replace('\xa0', '')
-        # print(connected_issues[0].get('description', ''))
+
         return issue, connected_issues
 
     def __load_commits(self) -> dict:
@@ -182,6 +183,7 @@ class ReportGenerator:
             with doc.create(Enumerate()) as enum:
                 for comment in filtered_comments:
                     comment_body = utils.escape_with_listings(comment["body"])
+                    print("This is the comment after escaping", comment_body)
                     enum.add_item(bold(comment["author"] + ": ") + comment_body)
 
     def __describe_issue(self, issue: dict, root_issue: bool = False) -> None:
@@ -295,6 +297,6 @@ class ReportGenerator:
                 self.__describe_issue(issue)
 
         utils.create_dir_if_necessary("Reports")
-        doc.generate_pdf(os.path.join("Reports", filename), clean_tex=True, compiler='pdflatex')
+        doc.generate_pdf(os.path.join("Reports", filename), clean_tex=False, compiler='pdflatex')
 
         print("{}: report is successfully created\n".format(root_issue["issue_key"]))
