@@ -291,13 +291,16 @@ class JiraParser:
         json_object["description"] = description if description else ""
 
         # Attachments
-        json_object["attachments"] = [
-            {
-                "filename": attachment["filename"],
-                "content": attachment["content"]
-            }
-            for attachment in fields.get("attachment", "")
-        ]
+        if "attachment" in fields.keys():
+            json_object["attachments"] = [
+                {
+                    "filename": attachment["filename"],
+                    "content": attachment["content"]
+                }
+                for attachment in fields["attachment"]
+            ]
+        else:
+            json_object["attachments"] = ""
 
         # Issue links
         json_object["issuelinks"] = [
