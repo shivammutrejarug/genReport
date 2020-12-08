@@ -296,7 +296,7 @@ class JiraParser:
                 "filename": attachment["filename"],
                 "content": attachment["content"]
             }
-            for attachment in fields["attachment"]
+            for attachment in fields.get("attachment", "")
         ]
 
         # Issue links
