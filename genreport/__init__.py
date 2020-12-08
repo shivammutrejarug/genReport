@@ -295,6 +295,6 @@ class ReportGenerator:
                 self.__describe_issue(issue)
 
         utils.create_dir_if_necessary("Reports")
-        doc.generate_pdf(os.path.join("Reports", filename), clean_tex=False, compiler='pdflatex')
+        doc.generate_pdf(os.path.join("Reports", filename), clean_tex=True, compiler='pdflatex')
 
         print("{}: report is successfully created\n".format(root_issue["issue_key"]))
