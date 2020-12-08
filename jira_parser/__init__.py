@@ -299,6 +299,7 @@ class JiraParser:
             for attachment in fields.get("attachment", None)
         ]
 
+
         # Issue links
         json_object["issuelinks"] = [
             {
