@@ -14,7 +14,7 @@ def __parse_arguments():
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument("-p", "--project", help="Target Jira project in capital letters", required=True)
     arg_parser.add_argument("-g", "--github", help="Target Jira project's GitHub repository")
-    arg_parser.add_argument("-c", "--credentials", help="GitHub username and password separated by comma. "
+    arg_parser.add_argument("-c", "--credentials", help="GitHub username and personal access token separated by comma. "
                                                         "Compulsory if GitHub repository is specified")
     return arg_parser.parse_args()
 
@@ -303,8 +303,8 @@ if __name__ == "__main__":
         github_repository = args.github
         if not args.credentials:
             print("You should specify GitHub credentials as well. For example:\n"
-                  "--credentials \"github_username,github_password\"\n"
-                  "-c \"github_username,github_password\"")
+                  "--credentials \"github_username,personal access token\"\n"
+                  "-c \"github_username,personal access token\"")
             exit(-1)
         else:
             github_credentials = utils.define_github_credentials(args.credentials)
